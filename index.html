@@ -2,25 +2,62 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#111318">
 
 <title>Коллективный текстовый квест</title>
 
+<!-- VK Bridge -->
+<script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+
 <style>
-    * {
-        box-sizing: border-box;
+    :root {
+        --bg: #111318;
+        --text: #f2f3f5;
+        --muted: #969ba5;
+        --panel: #191c23;
+        --panel-2: #222631;
+        --border: #292e38;
+        --border-2: #343a47;
+        --accent: #7aa7ff;
+        --accent-soft: #26385e;
+        --bar-bg: #101218;
+        --result-bg: #20242d;
+        --next-bg: #272c37;
+        --on-accent: #101218;
     }
+
+    /* Светлая тема VK */
+    body.bright {
+        --bg: #f2f4f8;
+        --text: #14181f;
+        --muted: #6b7280;
+        --panel: #ffffff;
+        --panel-2: #f0f2f6;
+        --border: #e1e5ec;
+        --border-2: #d3d9e3;
+        --accent: #3b74e8;
+        --accent-soft: #dbe6ff;
+        --bar-bg: #e6eaf1;
+        --result-bg: #f0f3f9;
+        --next-bg: #e6eaf1;
+        --on-accent: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
 
     body {
         margin: 0;
-        background: #111318;
-        color: #f2f3f5;
+        background: var(--bg);
+        color: var(--text);
         font-family: Arial, sans-serif;
+        transition: background .25s, color .25s;
     }
 
     .game {
         width: min(700px, 94%);
         margin: 30px auto;
+        padding-bottom: calc(20px + env(safe-area-inset-bottom));
     }
 
     .header {
@@ -28,23 +65,35 @@
         margin-bottom: 25px;
     }
 
-    .header h1 {
-        margin-bottom: 8px;
+    .header h1 { margin-bottom: 8px; }
+
+    .header p { color: var(--muted); }
+
+    .user {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 12px;
+        font-size: 14px;
+        color: var(--muted);
     }
 
-    .header p {
-        color: #969ba5;
+    .user img {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
     }
 
     .scene {
-        background: #191c23;
-        border: 1px solid #292e38;
+        background: var(--panel);
+        border: 1px solid var(--border);
         border-radius: 16px;
         padding: 25px;
     }
 
     .chapter {
-        color: #7aa7ff;
+        color: var(--accent);
         font-size: 13px;
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -70,24 +119,24 @@
     }
 
     .option {
-        background: #222631;
-        border: 1px solid #343a47;
-        color: white;
+        background: var(--panel-2);
+        border: 1px solid var(--border-2);
+        color: var(--text);
         padding: 16px;
         border-radius: 12px;
         cursor: pointer;
         text-align: left;
         transition: .2s;
+        font-family: inherit;
     }
 
     .option:hover {
-        background: #2a3040;
-        border-color: #7aa7ff;
+        border-color: var(--accent);
     }
 
     .option.selected {
-        border-color: #7aa7ff;
-        background: #26385e;
+        border-color: var(--accent);
+        background: var(--accent-soft);
     }
 
     .option-title {
@@ -97,32 +146,30 @@
 
     .option-text {
         margin-top: 5px;
-        color: #b5bac5;
+        color: var(--muted);
         font-size: 14px;
     }
 
-    .votes {
-        margin-top: 12px;
-    }
+    .votes { margin-top: 12px; }
 
     .vote-info {
         display: flex;
         justify-content: space-between;
-        color: #aeb4bf;
+        color: var(--muted);
         font-size: 13px;
         margin-bottom: 5px;
     }
 
     .bar {
         height: 7px;
-        background: #101218;
+        background: var(--bar-bg);
         border-radius: 10px;
         overflow: hidden;
     }
 
     .bar-fill {
         height: 100%;
-        background: #7aa7ff;
+        background: var(--accent);
         width: 0%;
         transition: width .4s;
     }
@@ -137,16 +184,17 @@
         font-size: 16px;
         font-weight: bold;
         cursor: pointer;
+        font-family: inherit;
     }
 
     .vote-button {
-        background: #7aa7ff;
-        color: #101218;
+        background: var(--accent);
+        color: var(--on-accent);
     }
 
     .next-button {
-        background: #272c37;
-        color: white;
+        background: var(--next-bg);
+        color: var(--text);
         display: none;
     }
 
@@ -158,7 +206,7 @@
     .result {
         margin-top: 20px;
         padding: 15px;
-        background: #20242d;
+        background: var(--result-bg);
         border-radius: 10px;
         display: none;
         line-height: 1.5;
@@ -166,7 +214,7 @@
 
     .stats {
         margin-top: 15px;
-        color: #858b97;
+        color: var(--muted);
         text-align: center;
         font-size: 13px;
     }
@@ -180,13 +228,12 @@
     <div class="header">
         <h1>🌑 Последний сигнал</h1>
         <p>Коллективный текстовый квест</p>
+        <div class="user" id="user"></div>
     </div>
 
     <div class="scene">
 
-        <div class="chapter" id="chapter">
-            Глава 1
-        </div>
+        <div class="chapter" id="chapter">Глава 1</div>
 
         <div class="story" id="story"></div>
 
@@ -246,21 +293,9 @@ const chapters = {
         question: "Что должна сделать группа?",
 
         options: [
-            {
-                title: "🔦 Открыть дверь",
-                text: "Узнать, кто находится снаружи.",
-                next: "door"
-            },
-            {
-                title: "📻 Проверить радио",
-                text: "Попытаться восстановить сообщение.",
-                next: "radio"
-            },
-            {
-                title: "🪟 Посмотреть в окно",
-                text: "Понять, что происходит на улице.",
-                next: "window"
-            }
+            { title: "🔦 Открыть дверь", text: "Узнать, кто находится снаружи.", next: "door" },
+            { title: "📻 Проверить радио", text: "Попытаться восстановить сообщение.", next: "radio" },
+            { title: "🪟 Посмотреть в окно", text: "Понять, что происходит на улице.", next: "window" }
         ]
     },
 
@@ -284,21 +319,9 @@ const chapters = {
         question: "Что делать?",
 
         options: [
-            {
-                title: "🔒 Заблокировать дверь",
-                text: "Попытаться удержать неизвестного снаружи.",
-                next: "lock"
-            },
-            {
-                title: "👁 Посмотреть в глазок",
-                text: "Попытаться увидеть того, кто стоит там.",
-                next: "peek"
-            },
-            {
-                title: "🏃 Уйти из квартиры",
-                text: "Использовать запасной выход.",
-                next: "escape"
-            }
+            { title: "🔒 Заблокировать дверь", text: "Попытаться удержать неизвестного снаружи.", next: "lock" },
+            { title: "👁 Посмотреть в глазок", text: "Попытаться увидеть того, кто стоит там.", next: "peek" },
+            { title: "🏃 Уйти из квартиры", text: "Использовать запасной выход.", next: "escape" }
         ]
     },
 
@@ -326,21 +349,9 @@ const chapters = {
         question: "Что делать с координатами?",
 
         options: [
-            {
-                title: "📍 Отправиться туда",
-                text: "Попытаться найти источник сигнала.",
-                next: "coordinates"
-            },
-            {
-                title: "📡 Ответить",
-                text: "Попробовать связаться с неизвестным.",
-                next: "answer"
-            },
-            {
-                title: "🔇 Выключить радио",
-                text: "Не рисковать и остаться дома.",
-                next: "hide"
-            }
+            { title: "📍 Отправиться туда", text: "Попытаться найти источник сигнала.", next: "coordinates" },
+            { title: "📡 Ответить", text: "Попробовать связаться с неизвестным.", next: "answer" },
+            { title: "🔇 Выключить радио", text: "Не рисковать и остаться дома.", next: "hide" }
         ]
     },
 
@@ -364,27 +375,14 @@ const chapters = {
         question: "Что делать?",
 
         options: [
-            {
-                title: "🔦 Посветить ему",
-                text: "Дать понять, что ты его заметил.",
-                next: "light"
-            },
-            {
-                title: "📸 Сфотографировать",
-                text: "Попробовать рассмотреть его через камеру.",
-                next: "photo"
-            },
-            {
-                title: "🪟 Закрыть шторы",
-                text: "Не привлекать внимания.",
-                next: "curtain"
-            }
+            { title: "🔦 Посветить ему", text: "Дать понять, что ты его заметил.", next: "light" },
+            { title: "📸 Сфотографировать", text: "Попробовать рассмотреть его через камеру.", next: "photo" },
+            { title: "🪟 Закрыть шторы", text: "Не привлекать внимания.", next: "curtain" }
         ]
     },
 
     lock: {
         chapter: "Глава 3",
-
         story: `Ты прижимаешься к двери всем телом.
 
 Ручка перестаёт двигаться.
@@ -400,21 +398,14 @@ const chapters = {
 Ты узнаёшь этот голос.
 
 Это голос из радио.`,
-
         question: "Продолжение следует...",
-
         options: [
-            {
-                title: "▶ Начать заново",
-                text: "Попробовать другой путь.",
-                next: "start"
-            }
+            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
         ]
     },
 
     peek: {
         chapter: "Глава 3",
-
         story: `Ты медленно приближаешься к глазку.
 
 Смотришь.
@@ -424,21 +415,14 @@ const chapters = {
 Но напротив двери стоит зеркало.
 
 И в зеркале отражается человек, который стоит прямо за тобой.`,
-
         question: "Продолжение следует...",
-
         options: [
-            {
-                title: "▶ Начать заново",
-                text: "Попробовать другой путь.",
-                next: "start"
-            }
+            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
         ]
     },
 
     escape: {
         chapter: "Глава 3",
-
         story: `Ты выбегаешь через запасной выход.
 
 На улице абсолютно тихо.
@@ -448,21 +432,14 @@ const chapters = {
 Новое сообщение:
 
 «Зачем вы вышли?»`,
-
         question: "Продолжение следует...",
-
         options: [
-            {
-                title: "▶ Начать заново",
-                text: "Попробовать другой путь.",
-                next: "start"
-            }
+            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
         ]
     },
 
     coordinates: {
         chapter: "Глава 3",
-
         story: `Ты вводишь координаты в телефон.
 
 Точка находится прямо под городом.
@@ -470,21 +447,14 @@ const chapters = {
 Но на карте там ничего нет.
 
 Только старый туннель.`,
-
         question: "Продолжение следует...",
-
         options: [
-            {
-                title: "▶ Начать заново",
-                text: "Попробовать другой путь.",
-                next: "start"
-            }
+            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
         ]
     },
 
     answer: {
         chapter: "Глава 3",
-
         story: `Ты нажимаешь кнопку передачи.
 
 «Кто вы?»
@@ -492,21 +462,14 @@ const chapters = {
 Ответ приходит мгновенно:
 
 «Мы — это вы. Через 17 минут».`,
-
         question: "Продолжение следует...",
-
         options: [
-            {
-                title: "▶ Начать заново",
-                text: "Попробовать другой путь.",
-                next: "start"
-            }
+            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
         ]
     },
 
     hide: {
         chapter: "Глава 3",
-
         story: `Ты выключаешь радио.
 
 В квартире становится абсолютно тихо.
@@ -516,21 +479,14 @@ const chapters = {
 На экране появляется изображение твоей комнаты.
 
 Камера находится за твоей спиной.`,
-
         question: "Продолжение следует...",
-
         options: [
-            {
-                title: "▶ Начать заново",
-                text: "Попробовать другой путь.",
-                next: "start"
-            }
+            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
         ]
     },
 
     light: {
         chapter: "Глава 3",
-
         story: `Ты включаешь фонарик.
 
 Человек на улице поднимает руку.
@@ -540,21 +496,14 @@ const chapters = {
 Теперь во всём городе снова загораются фонари.
 
 Но каждый из них находится рядом с человеком.`,
-
         question: "Продолжение следует...",
-
         options: [
-            {
-                title: "▶ Начать заново",
-                text: "Попробовать другой путь.",
-                next: "start"
-            }
+            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
         ]
     },
 
     photo: {
         chapter: "Глава 3",
-
         story: `Ты делаешь фотографию.
 
 На экране телефона человек исчезает.
@@ -564,71 +513,188 @@ const chapters = {
 На нём твоя квартира.
 
 Снятая изнутри.`,
-
         question: "Продолжение следует...",
-
         options: [
-            {
-                title: "▶ Начать заново",
-                text: "Попробовать другой путь.",
-                next: "start"
-            }
+            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
         ]
     },
 
     curtain: {
         chapter: "Глава 3",
-
         story: `Ты закрываешь шторы.
 
 Через несколько секунд кто-то стучит в окно.
 
 Ты живёшь на девятом этаже.`,
-
         question: "Продолжение следует...",
-
         options: [
-            {
-                title: "▶ Начать заново",
-                text: "Попробовать другой путь.",
-                next: "start"
-            }
+            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
         ]
     }
 
 };
 
 
-// Здесь хранятся голоса текущего пользователя/демо.
-// В настоящей версии эти данные должны храниться на сервере.
-let votes = {};
+/* ==========================================================
+   VK BRIDGE
+   ========================================================== */
 
+const bridge = window.vkBridge || null;
+
+let vkReady = false;     // инициализация прошла успешно
+let vkUser  = null;      // данные пользователя
+
+const STORAGE_KEY = 'quest_progress_v1'; // ключ в VK Storage
+
+/**
+ * Обёртка с таймаутом: вне VK некоторые методы могут «зависнуть».
+ */
+function withTimeout(promise, ms = 3000) {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('vk-bridge timeout')), ms)
+        )
+    ]);
+}
+
+/**
+ * Инициализация VK Mini App.
+ * Если приложение открыто в обычном браузере — просто выходим
+ * и работаем на localStorage.
+ */
+async function initVK() {
+    if (!bridge) {
+        console.info('[VK] vk-bridge не загружен — обычный режим браузера');
+        return;
+    }
+
+    try {
+        await withTimeout(bridge.send('VKWebAppInit'));
+        vkReady = true;
+        console.info('[VK] VKWebAppInit OK');
+    } catch (e) {
+        console.warn('[VK] Не удалось инициализировать:', e.message);
+        return;
+    }
+
+    // Подписка на события VK
+    bridge.subscribe(handleVKEvent);
+
+    // Тема оформления (тёмная / светлая)
+    try {
+        const config = await withTimeout(bridge.send('VKWebAppGetConfig'));
+        if (config && config.scheme) applyScheme(config.scheme);
+    } catch (e) { /* не критично */ }
+
+    // Данные пользователя
+    try {
+        vkUser = await withTimeout(bridge.send('VKWebAppGetUserInfo'));
+        renderUser();
+    } catch (e) {
+        console.warn('[VK] Не удалось получить профиль:', e.message);
+    }
+}
+
+/**
+ * Обработка событий от VK.
+ */
+function handleVKEvent(event) {
+    const type = event.detail && event.detail.type;
+
+    // VK сообщает о смене темы
+    if (type === 'VKWebAppUpdateConfig') {
+        applyScheme(event.detail.data.scheme);
+    }
+}
+
+/**
+ * Применяет тему VK к интерфейсу.
+ */
+function applyScheme(scheme) {
+    const isLight = scheme === 'bright' || scheme === 'vkcom_light';
+    document.body.classList.toggle('bright', isLight);
+
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = isLight ? '#f2f4f8' : '#111318';
+}
+
+/**
+ * Показывает имя и аватар игрока из VK.
+ */
+function renderUser() {
+    if (!vkUser) return;
+
+    const el = document.getElementById('user');
+    el.innerHTML = `
+        <img src="${vkUser.photo_100}" alt="">
+        <span>${vkUser.first_name} ${vkUser.last_name}</span>
+    `;
+    el.style.display = 'flex';
+}
+
+/* ---------- Хранилище (VK Storage + localStorage fallback) ---------- */
+
+async function storageGet(key) {
+    if (vkReady) {
+        try {
+            const res = await withTimeout(
+                bridge.send('VKWebAppStorageGet', { keys: [key] })
+            );
+            const item = res.keys.find(k => k.key === key);
+            if (item && item.value) return item.value;
+        } catch (e) {
+            console.warn('[VK] StorageGet error:', e.message);
+        }
+    }
+    try { return localStorage.getItem(key) || ''; } catch (e) { return ''; }
+}
+
+async function storageSet(key, value) {
+    if (vkReady) {
+        try {
+            await withTimeout(
+                bridge.send('VKWebAppStorageSet', { key, value })
+            );
+        } catch (e) {
+            console.warn('[VK] StorageSet error:', e.message);
+        }
+    }
+    try { localStorage.setItem(key, value); } catch (e) {}
+}
+
+
+/* ==========================================================
+   ЛОГИКА ИГРЫ
+   ========================================================== */
+
+let votes = {};          // { sceneName: [голоса по вариантам] }
+let myVotes = {};        // { sceneName: выбранный индекс } — мои голоса
 let currentScene = "start";
 let selected = null;
 let hasVoted = false;
 
-const chapterElement = document.getElementById("chapter");
-const storyElement = document.getElementById("story");
+const chapterElement  = document.getElementById("chapter");
+const storyElement    = document.getElementById("story");
 const questionElement = document.getElementById("question");
-const optionsElement = document.getElementById("options");
-const voteButton = document.getElementById("voteButton");
-const nextButton = document.getElementById("nextButton");
-const resultElement = document.getElementById("result");
-const statsElement = document.getElementById("stats");
+const optionsElement  = document.getElementById("options");
+const voteButton      = document.getElementById("voteButton");
+const nextButton      = document.getElementById("nextButton");
+const resultElement   = document.getElementById("result");
+const statsElement    = document.getElementById("stats");
 
 
 function loadScene(sceneName) {
 
     const scene = chapters[sceneName];
-
     if (!scene) return;
 
     currentScene = sceneName;
     selected = null;
     hasVoted = false;
 
-    chapterElement.textContent = scene.chapter;
-    storyElement.textContent = scene.story;
+    chapterElement.textContent  = scene.chapter;
+    storyElement.textContent    = scene.story;
     questionElement.textContent = scene.question;
 
     optionsElement.innerHTML = "";
@@ -636,7 +702,6 @@ function loadScene(sceneName) {
     scene.options.forEach((option, index) => {
 
         const button = document.createElement("button");
-
         button.className = "option";
         button.type = "button";
 
@@ -680,19 +745,20 @@ function loadScene(sceneName) {
     nextButton.style.display = "none";
 
     updateVotes();
+
+    // Если пользователь уже голосовал в этой сцене — сразу показываем итог
+    if (myVotes[currentScene] !== undefined) {
+        showResult(myVotes[currentScene]);
+    }
 }
 
 
 function updateVotes() {
 
     const sceneVotes = votes[currentScene] || [];
-
     const scene = chapters[currentScene];
 
-    const total = sceneVotes.reduce(
-        (sum, value) => sum + value,
-        0
-    );
+    const total = sceneVotes.reduce((sum, value) => sum + value, 0);
 
     document.querySelectorAll(".option").forEach((element, index) => {
 
@@ -712,12 +778,45 @@ function updateVotes() {
             .style.width = `${percent}%`;
     });
 
-    statsElement.textContent =
-        `Всего голосов: ${total}`;
+    statsElement.textContent = `Всего голосов: ${total}`;
 }
 
 
-voteButton.addEventListener("click", () => {
+/**
+ * Показывает итог голосования и кнопку перехода дальше.
+ */
+function showResult(winnerIndex) {
+
+    hasVoted = true;
+    voteButton.style.display = "none";
+
+    updateVotes();
+
+    const optionEls = document.querySelectorAll(".option");
+    optionEls.forEach(el => el.classList.remove("selected"));
+    if (optionEls[winnerIndex]) optionEls[winnerIndex].classList.add("selected");
+
+    const winningOption = chapters[currentScene].options[winnerIndex];
+    if (!winningOption) return;
+
+    resultElement.style.display = "block";
+    resultElement.innerHTML = `
+        🗳️ <strong>Голосование завершено.</strong><br><br>
+
+        Сейчас лидирует:<br>
+        <strong>${winningOption.title}</strong><br>
+        ${winningOption.text}
+    `;
+
+    nextButton.style.display = "block";
+    nextButton.onclick = () => {
+        loadScene(winningOption.next);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+}
+
+
+voteButton.addEventListener("click", async () => {
 
     if (selected === null || hasVoted) return;
 
@@ -728,53 +827,79 @@ voteButton.addEventListener("click", () => {
 
     votes[currentScene][selected]++;
 
-    hasVoted = true;
+    // Запоминаем выбор пользователя
+    myVotes[currentScene] = selected;
 
-    voteButton.style.display = "none";
+    // Сохраняем в VK Storage (или localStorage вне VK)
+    await storageSet(STORAGE_KEY, JSON.stringify(myVotes));
 
-    updateVotes();
+    // 🔌 Здесь можно отправить голос на свой сервер,
+    //    чтобы голосование было по-настоящему общим:
+    //
+    // await fetch('https://your-api/vote', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({
+    //         scene: currentScene,
+    //         option: selected,
+    //         user: vkUser ? vkUser.id : null,
+    //         sign: '' // подпись параметров запуска
+    //     })
+    // });
 
     const sceneVotes = votes[currentScene];
 
     let winner = 0;
-
     for (let i = 1; i < sceneVotes.length; i++) {
-
-        if (sceneVotes[i] > sceneVotes[winner]) {
-            winner = i;
-        }
-
+        if (sceneVotes[i] > sceneVotes[winner]) winner = i;
     }
 
-    const winningOption =
-        chapters[currentScene].options[winner];
-
-    resultElement.style.display = "block";
-
-    resultElement.innerHTML = `
-        🗳️ <strong>Голосование завершено.</strong><br><br>
-
-        Сейчас лидирует:<br>
-        <strong>${winningOption.title}</strong><br>
-        ${winningOption.text}
-    `;
-
-    nextButton.style.display = "block";
-
-    nextButton.onclick = () => {
-
-        loadScene(winningOption.next);
-
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
-    };
-
+    showResult(winner);
 });
 
 
-loadScene("start");
+/**
+ * Загружает сохранённый прогресс игрока.
+ */
+async function loadProgress() {
+
+    const raw = await storageGet(STORAGE_KEY);
+    if (!raw) return;
+
+    try {
+        myVotes = JSON.parse(raw) || {};
+    } catch (e) {
+        myVotes = {};
+        return;
+    }
+
+    // Переносим голоса игрока в общую статистику сессии
+    Object.keys(myVotes).forEach(sceneName => {
+
+        const scene = chapters[sceneName];
+        if (!scene) return;
+
+        const index = myVotes[sceneName];
+        if (index < 0 || index >= scene.options.length) return;
+
+        if (!votes[sceneName]) {
+            votes[sceneName] = new Array(scene.options.length).fill(0);
+        }
+
+        votes[sceneName][index]++;
+    });
+}
+
+
+/* ---------- Старт ---------- */
+
+async function start() {
+    await initVK();
+    await loadProgress();
+    loadScene("start");
+}
+
+start();
 
 </script>
 
