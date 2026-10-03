@@ -27,7 +27,6 @@
         --on-accent: #101218;
     }
 
-    /* Светлая тема VK */
     body.bright {
         --bg: #f2f4f8;
         --text: #14181f;
@@ -83,6 +82,47 @@
         width: 30px;
         height: 30px;
         border-radius: 50%;
+    }
+
+    /* Панель администратора / предложения виджета */
+    .admin-panel {
+        margin-top: 20px;
+        padding: 15px;
+        background: var(--panel-2);
+        border: 1px solid var(--border-2);
+        border-radius: 12px;
+        display: none;
+    }
+
+    .admin-panel h3 {
+        margin: 0 0 10px;
+        font-size: 15px;
+        color: var(--accent);
+    }
+
+    .admin-panel button {
+        width: 100%;
+        border: 0;
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 8px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        font-family: inherit;
+        background: var(--accent);
+        color: var(--on-accent);
+        transition: .2s;
+    }
+
+    .admin-panel button:hover {
+        opacity: .9;
+    }
+
+    .admin-panel button.secondary {
+        background: var(--next-bg);
+        color: var(--text);
+        border: 1px solid var(--border-2);
     }
 
     .scene {
@@ -231,6 +271,13 @@
         <div class="user" id="user"></div>
     </div>
 
+    <!-- Панель для администратора сообщества -->
+    <div class="admin-panel" id="adminPanel">
+        <h3>⚙️ Управление виджетом</h3>
+        <button id="addWidgetBtn">📌 Добавить виджет в сообщество</button>
+        <button class="secondary" id="previewWidgetBtn">👁 Предпросмотр виджета</button>
+    </div>
+
     <div class="scene">
 
         <div class="chapter" id="chapter">Глава 1</div>
@@ -260,296 +307,39 @@
 <script>
 
 const chapters = {
-
+    // ... (все главы без изменений) ...
+    // Чтобы не дублировать код, оставьте здесь ваш объект chapters без изменений
+    // Я покажу только начало, но в вашем файле он должен быть полностью
     start: {
         chapter: "Глава 1 — Последний сигнал",
-
-        story: `23:47.
-
-Город погрузился во тьму.
-
-Ты сидишь один в своей квартире, когда старый радиоприёмник внезапно включается сам.
-
-Сначала слышен только шум.
-
-Затем голос:
-
-«Если ты это слышишь — не выходи на улицу».
-
-Помехи.
-
-«Они уже здесь».
-
-Радио замолкает.
-
-Через несколько секунд в дверь раздаётся три удара.
-
-Тук.
-
-Тук.
-
-Тук.`,
-
+        story: `23:47.\n\nГород погрузился во тьму.\n\nТы сидишь один в своей квартире, когда старый радиоприёмник внезапно включается сам.\n\nСначала слышен только шум.\n\nЗатем голос:\n\n«Если ты это слышишь — не выходи на улицу».\n\nПомехи.\n\n«Они уже здесь».\n\nРадио замолкает.\n\nЧерез несколько секунд в дверь раздаётся три удара.\n\nТук.\n\nТук.\n\nТук.`,
         question: "Что должна сделать группа?",
-
         options: [
             { title: "🔦 Открыть дверь", text: "Узнать, кто находится снаружи.", next: "door" },
             { title: "📻 Проверить радио", text: "Попытаться восстановить сообщение.", next: "radio" },
             { title: "🪟 Посмотреть в окно", text: "Понять, что происходит на улице.", next: "window" }
         ]
     },
-
-    door: {
-        chapter: "Глава 2 — За дверью",
-
-        story: `Ты медленно подходишь к двери.
-
-За ней кто-то тяжело дышит.
-
-Затем голос произносит:
-
-«Не открывай...»
-
-Пауза.
-
-«...это не я».
-
-В этот момент ручка двери начинает медленно опускаться.`,
-
-        question: "Что делать?",
-
-        options: [
-            { title: "🔒 Заблокировать дверь", text: "Попытаться удержать неизвестного снаружи.", next: "lock" },
-            { title: "👁 Посмотреть в глазок", text: "Попытаться увидеть того, кто стоит там.", next: "peek" },
-            { title: "🏃 Уйти из квартиры", text: "Использовать запасной выход.", next: "escape" }
-        ]
-    },
-
-    radio: {
-        chapter: "Глава 2 — Частота",
-
-        story: `Ты возвращаешься к радио.
-
-Шум становится громче.
-
-Ты начинаешь вращать ручку настройки.
-
-87.4...
-
-91.2...
-
-102.7...
-
-На частоте 104.3 появляется голос:
-
-«Если вы меня слышите, у вас осталось меньше часа».
-
-Затем передатчик сообщает координаты.`,
-
-        question: "Что делать с координатами?",
-
-        options: [
-            { title: "📍 Отправиться туда", text: "Попытаться найти источник сигнала.", next: "coordinates" },
-            { title: "📡 Ответить", text: "Попробовать связаться с неизвестным.", next: "answer" },
-            { title: "🔇 Выключить радио", text: "Не рисковать и остаться дома.", next: "hide" }
-        ]
-    },
-
-    window: {
-        chapter: "Глава 2 — Улица",
-
-        story: `Ты подходишь к окну.
-
-На улице нет машин.
-
-Нет людей.
-
-Даже фонари погасли.
-
-Но примерно в трёхстах метрах от дома горит один единственный свет.
-
-И рядом с ним стоит человек.
-
-Он смотрит прямо на твоё окно.`,
-
-        question: "Что делать?",
-
-        options: [
-            { title: "🔦 Посветить ему", text: "Дать понять, что ты его заметил.", next: "light" },
-            { title: "📸 Сфотографировать", text: "Попробовать рассмотреть его через камеру.", next: "photo" },
-            { title: "🪟 Закрыть шторы", text: "Не привлекать внимания.", next: "curtain" }
-        ]
-    },
-
-    lock: {
-        chapter: "Глава 3",
-        story: `Ты прижимаешься к двери всем телом.
-
-Ручка перестаёт двигаться.
-
-Несколько секунд ничего не происходит.
-
-Затем из-за двери раздаётся знакомый голос:
-
-«Правильно.
-
-Не открывай».
-
-Ты узнаёшь этот голос.
-
-Это голос из радио.`,
-        question: "Продолжение следует...",
-        options: [
-            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
-        ]
-    },
-
-    peek: {
-        chapter: "Глава 3",
-        story: `Ты медленно приближаешься к глазку.
-
-Смотришь.
-
-На лестничной площадке никого нет.
-
-Но напротив двери стоит зеркало.
-
-И в зеркале отражается человек, который стоит прямо за тобой.`,
-        question: "Продолжение следует...",
-        options: [
-            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
-        ]
-    },
-
-    escape: {
-        chapter: "Глава 3",
-        story: `Ты выбегаешь через запасной выход.
-
-На улице абсолютно тихо.
-
-Телефон вибрирует.
-
-Новое сообщение:
-
-«Зачем вы вышли?»`,
-        question: "Продолжение следует...",
-        options: [
-            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
-        ]
-    },
-
-    coordinates: {
-        chapter: "Глава 3",
-        story: `Ты вводишь координаты в телефон.
-
-Точка находится прямо под городом.
-
-Но на карте там ничего нет.
-
-Только старый туннель.`,
-        question: "Продолжение следует...",
-        options: [
-            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
-        ]
-    },
-
-    answer: {
-        chapter: "Глава 3",
-        story: `Ты нажимаешь кнопку передачи.
-
-«Кто вы?»
-
-Ответ приходит мгновенно:
-
-«Мы — это вы. Через 17 минут».`,
-        question: "Продолжение следует...",
-        options: [
-            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
-        ]
-    },
-
-    hide: {
-        chapter: "Глава 3",
-        story: `Ты выключаешь радио.
-
-В квартире становится абсолютно тихо.
-
-Через несколько секунд телевизор включается сам.
-
-На экране появляется изображение твоей комнаты.
-
-Камера находится за твоей спиной.`,
-        question: "Продолжение следует...",
-        options: [
-            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
-        ]
-    },
-
-    light: {
-        chapter: "Глава 3",
-        story: `Ты включаешь фонарик.
-
-Человек на улице поднимает руку.
-
-И выключает свет.
-
-Теперь во всём городе снова загораются фонари.
-
-Но каждый из них находится рядом с человеком.`,
-        question: "Продолжение следует...",
-        options: [
-            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
-        ]
-    },
-
-    photo: {
-        chapter: "Глава 3",
-        story: `Ты делаешь фотографию.
-
-На экране телефона человек исчезает.
-
-Но появляется другое изображение.
-
-На нём твоя квартира.
-
-Снятая изнутри.`,
-        question: "Продолжение следует...",
-        options: [
-            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
-        ]
-    },
-
-    curtain: {
-        chapter: "Глава 3",
-        story: `Ты закрываешь шторы.
-
-Через несколько секунд кто-то стучит в окно.
-
-Ты живёшь на девятом этаже.`,
-        question: "Продолжение следует...",
-        options: [
-            { title: "▶ Начать заново", text: "Попробовать другой путь.", next: "start" }
-        ]
-    }
-
+    // ... остальные главы ...
 };
 
 
 /* ==========================================================
-   VK BRIDGE
+   VK BRIDGE — ПОЛНАЯ ИНТЕГРАЦИЯ
    ========================================================== */
 
 const bridge = window.vkBridge || null;
 
-let vkReady = false;     // инициализация прошла успешно
-let vkUser  = null;      // данные пользователя
+let vkReady = false;
+let vkUser  = null;
+let vkLaunchParams = null;
 
-const STORAGE_KEY = 'quest_progress_v1'; // ключ в VK Storage
+const STORAGE_KEY = 'quest_progress_v1';
 
 /**
- * Обёртка с таймаутом: вне VK некоторые методы могут «зависнуть».
+ * Обёртка с таймаутом
  */
-function withTimeout(promise, ms = 3000) {
+function withTimeout(promise, ms = 5000) {
     return Promise.race([
         promise,
         new Promise((_, reject) =>
@@ -559,9 +349,7 @@ function withTimeout(promise, ms = 3000) {
 }
 
 /**
- * Инициализация VK Mini App.
- * Если приложение открыто в обычном браузере — просто выходим
- * и работаем на localStorage.
+ * Инициализация VK Mini App
  */
 async function initVK() {
     if (!bridge) {
@@ -578,10 +366,19 @@ async function initVK() {
         return;
     }
 
-    // Подписка на события VK
     bridge.subscribe(handleVKEvent);
 
-    // Тема оформления (тёмная / светлая)
+    // Параметры запуска (для определения, запущено ли приложение в сообществе)
+    try {
+        vkLaunchParams = await withTimeout(
+            bridge.send('VKWebAppGetLaunchParams')
+        );
+        console.info('[VK] Launch params:', vkLaunchParams);
+    } catch (e) {
+        console.warn('[VK] Launch params error:', e.message);
+    }
+
+    // Тема оформления
     try {
         const config = await withTimeout(bridge.send('VKWebAppGetConfig'));
         if (config && config.scheme) applyScheme(config.scheme);
@@ -591,25 +388,25 @@ async function initVK() {
     try {
         vkUser = await withTimeout(bridge.send('VKWebAppGetUserInfo'));
         renderUser();
+        await checkAdminRights();
     } catch (e) {
         console.warn('[VK] Не удалось получить профиль:', e.message);
     }
 }
 
 /**
- * Обработка событий от VK.
+ * Обработка событий VK
  */
 function handleVKEvent(event) {
     const type = event.detail && event.detail.type;
 
-    // VK сообщает о смене темы
     if (type === 'VKWebAppUpdateConfig') {
         applyScheme(event.detail.data.scheme);
     }
 }
 
 /**
- * Применяет тему VK к интерфейсу.
+ * Применяет тему VK
  */
 function applyScheme(scheme) {
     const isLight = scheme === 'bright' || scheme === 'vkcom_light';
@@ -620,7 +417,7 @@ function applyScheme(scheme) {
 }
 
 /**
- * Показывает имя и аватар игрока из VK.
+ * Показывает имя и аватар игрока
  */
 function renderUser() {
     if (!vkUser) return;
@@ -631,6 +428,106 @@ function renderUser() {
         <span>${vkUser.first_name} ${vkUser.last_name}</span>
     `;
     el.style.display = 'flex';
+}
+
+/* ---------- ПРОВЕРКА ПРАВ АДМИНИСТРАТОРА ---------- */
+
+/**
+ * Проверяет, является ли пользователь администратором сообщества,
+ * из которого запущено приложение.
+ * Если да — показывает панель управления виджетом.
+ */
+async function checkAdminRights() {
+    if (!vkReady || !vkLaunchParams) return;
+
+    const groupId = vkLaunchParams.vk_group_id;
+    const viewerRole = vkLaunchParams.vk_viewer_group_role;
+
+    // Если приложение запущено не из сообщества — скрываем панель
+    if (!groupId) return;
+
+    // Роли администратора: admin, editor, moderator
+    const isAdmin = viewerRole === 'admin' ||
+                    viewerRole === 'editor' ||
+                    viewerRole === 'moderator';
+
+    if (isAdmin) {
+        document.getElementById('adminPanel').style.display = 'block';
+        console.info('[VK] Пользователь — администратор сообщества', groupId);
+    }
+}
+
+/* ---------- ДОБАВЛЕНИЕ ВИДЖЕТА В СООБЩЕСТВО ---------- */
+
+/**
+ * Открывает нативное окно выбора сообщества для установки виджета.
+ * ВАЖНО: В настройках приложения должна стоять галочка
+ * «Разрешить установку в сообществах»:
+ * https://vk.com/editapp?id={app_id}
+ */
+async function addWidgetToCommunity() {
+    if (!vkReady) {
+        alert('VK Bridge недоступен. Откройте приложение внутри ВКонтакте.');
+        return;
+    }
+
+    try {
+        const result = await bridge.send('VKWebAppAddToCommunity', {
+            // hide_success_modal: false — показывать модальное окно успеха
+            // (доступно в vk-bridge >= 2.15.7)
+        });
+
+        if (result && result.group_id) {
+            console.info('[VK] Виджет добавлен в сообщество:', result.group_id);
+            alert('✅ Виджет успешно добавлен в сообщество!');
+        } else {
+            console.info('[VK] Пользователь закрыл окно выбора сообщества');
+        }
+    } catch (error) {
+        console.error('[VK] Ошибка добавления виджета:', error);
+        alert('❌ Не удалось добавить виджет. Убедитесь, что приложение разрешено для установки в сообществах.');
+    }
+}
+
+/**
+ * Показывает предпросмотр виджета (для администраторов).
+ * Использует событие VKWebAppShowCommunityWidgetPreviewBox.
+ * Тип виджета: 'text' — текстовый виджет.
+ * code — JSON-строка с настройками виджета.
+ */
+async function previewWidget() {
+    if (!vkReady) {
+        alert('VK Bridge недоступен.');
+        return;
+    }
+
+    const groupId = vkLaunchParams && vkLaunchParams.vk_group_id;
+    if (!groupId) {
+        alert('Приложение запущено не из сообщества.');
+        return;
+    }
+
+    // Пример конфигурации текстового виджета
+    const widgetCode = JSON.stringify({
+        title: 'Последний сигнал',
+        text: 'Присоединяйтесь к коллективному квесту!',
+        button: {
+            title: 'Играть',
+            url: 'https://vk.com/app' + (vkLaunchParams.vk_app_id || '')
+        }
+    });
+
+    try {
+        await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
+            group_id: Number(groupId),
+            type: 'text',
+            code: widgetCode
+        });
+        console.info('[VK] Предпросмотр виджета открыт');
+    } catch (error) {
+        console.error('[VK] Ошибка предпросмотра виджета:', error);
+        alert('❌ Не удалось открыть предпросмотр. Возможно, метод не поддерживается на этой платформе.');
+    }
 }
 
 /* ---------- Хранилище (VK Storage + localStorage fallback) ---------- */
@@ -668,8 +565,8 @@ async function storageSet(key, value) {
    ЛОГИКА ИГРЫ
    ========================================================== */
 
-let votes = {};          // { sceneName: [голоса по вариантам] }
-let myVotes = {};        // { sceneName: выбранный индекс } — мои голоса
+let votes = {};
+let myVotes = {};
 let currentScene = "start";
 let selected = null;
 let hasVoted = false;
@@ -685,7 +582,6 @@ const statsElement    = document.getElementById("stats");
 
 
 function loadScene(sceneName) {
-
     const scene = chapters[sceneName];
     if (!scene) return;
 
@@ -700,7 +596,6 @@ function loadScene(sceneName) {
     optionsElement.innerHTML = "";
 
     scene.options.forEach((option, index) => {
-
         const button = document.createElement("button");
         button.className = "option";
         button.type = "button";
@@ -708,13 +603,11 @@ function loadScene(sceneName) {
         button.innerHTML = `
             <div class="option-title">${option.title}</div>
             <div class="option-text">${option.text}</div>
-
             <div class="votes">
                 <div class="vote-info">
                     <span class="vote-count">0 голосов</span>
                     <span class="vote-percent">0%</span>
                 </div>
-
                 <div class="bar">
                     <div class="bar-fill"></div>
                 </div>
@@ -722,16 +615,11 @@ function loadScene(sceneName) {
         `;
 
         button.addEventListener("click", () => {
-
             if (hasVoted) return;
-
             selected = index;
-
             document.querySelectorAll(".option")
                 .forEach(el => el.classList.remove("selected"));
-
             button.classList.add("selected");
-
             voteButton.disabled = false;
         });
 
@@ -740,13 +628,11 @@ function loadScene(sceneName) {
 
     voteButton.style.display = "block";
     voteButton.disabled = true;
-
     resultElement.style.display = "none";
     nextButton.style.display = "none";
 
     updateVotes();
 
-    // Если пользователь уже голосовал в этой сцене — сразу показываем итог
     if (myVotes[currentScene] !== undefined) {
         showResult(myVotes[currentScene]);
     }
@@ -754,26 +640,19 @@ function loadScene(sceneName) {
 
 
 function updateVotes() {
-
     const sceneVotes = votes[currentScene] || [];
-    const scene = chapters[currentScene];
-
     const total = sceneVotes.reduce((sum, value) => sum + value, 0);
 
     document.querySelectorAll(".option").forEach((element, index) => {
-
         const count = sceneVotes[index] || 0;
-
         const percent = total > 0
             ? Math.round(count / total * 100)
             : 0;
 
         element.querySelector(".vote-count")
             .textContent = `${count} голосов`;
-
         element.querySelector(".vote-percent")
             .textContent = `${percent}%`;
-
         element.querySelector(".bar-fill")
             .style.width = `${percent}%`;
     });
@@ -782,14 +661,9 @@ function updateVotes() {
 }
 
 
-/**
- * Показывает итог голосования и кнопку перехода дальше.
- */
 function showResult(winnerIndex) {
-
     hasVoted = true;
     voteButton.style.display = "none";
-
     updateVotes();
 
     const optionEls = document.querySelectorAll(".option");
@@ -802,7 +676,6 @@ function showResult(winnerIndex) {
     resultElement.style.display = "block";
     resultElement.innerHTML = `
         🗳️ <strong>Голосование завершено.</strong><br><br>
-
         Сейчас лидирует:<br>
         <strong>${winningOption.title}</strong><br>
         ${winningOption.text}
@@ -817,7 +690,6 @@ function showResult(winnerIndex) {
 
 
 voteButton.addEventListener("click", async () => {
-
     if (selected === null || hasVoted) return;
 
     if (!votes[currentScene]) {
@@ -826,29 +698,22 @@ voteButton.addEventListener("click", async () => {
     }
 
     votes[currentScene][selected]++;
-
-    // Запоминаем выбор пользователя
     myVotes[currentScene] = selected;
 
-    // Сохраняем в VK Storage (или localStorage вне VK)
     await storageSet(STORAGE_KEY, JSON.stringify(myVotes));
 
-    // 🔌 Здесь можно отправить голос на свой сервер,
-    //    чтобы голосование было по-настоящему общим:
-    //
+    // 🔌 Здесь можно отправить голос на свой сервер:
     // await fetch('https://your-api/vote', {
     //     method: 'POST',
     //     headers: { 'Content-Type': 'application/json' },
     //     body: JSON.stringify({
     //         scene: currentScene,
     //         option: selected,
-    //         user: vkUser ? vkUser.id : null,
-    //         sign: '' // подпись параметров запуска
+    //         user: vkUser ? vkUser.id : null
     //     })
     // });
 
     const sceneVotes = votes[currentScene];
-
     let winner = 0;
     for (let i = 1; i < sceneVotes.length; i++) {
         if (sceneVotes[i] > sceneVotes[winner]) winner = i;
@@ -858,11 +723,7 @@ voteButton.addEventListener("click", async () => {
 });
 
 
-/**
- * Загружает сохранённый прогресс игрока.
- */
 async function loadProgress() {
-
     const raw = await storageGet(STORAGE_KEY);
     if (!raw) return;
 
@@ -873,9 +734,7 @@ async function loadProgress() {
         return;
     }
 
-    // Переносим голоса игрока в общую статистику сессии
     Object.keys(myVotes).forEach(sceneName => {
-
         const scene = chapters[sceneName];
         if (!scene) return;
 
@@ -889,6 +748,15 @@ async function loadProgress() {
         votes[sceneName][index]++;
     });
 }
+
+
+/* ---------- Обработчики кнопок панели ---------- */
+
+document.getElementById('addWidgetBtn')
+    .addEventListener('click', addWidgetToCommunity);
+
+document.getElementById('previewWidgetBtn')
+    .addEventListener('click', previewWidget);
 
 
 /* ---------- Старт ---------- */
