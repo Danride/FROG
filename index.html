@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Текстовый квест сообщества</title>
+  <!-- Подключаем VK Bridge -->
+  <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #000;
+      padding: 16px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .quest-text {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      font-size: 17px;
+      line-height: 1.5;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+    .timer {
+      text-align: center;
+      font-size: 15px;
+      color: #656565;
+      margin-bottom: 12px;
+    }
+    .timer span {
+      font-weight: 600;
+      color: #e64646;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex: 1;
+    }
+    .option-btn {
+      background: #fff;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 16px;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #000;
+    }
+    .option-btn:hover {
+      border-color: #2688eb;
+    }
+    .option-btn.voted {
+      border-color: #2688eb;
+      background: #e8f2fd;
+    }
+    .option-btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    .vote-count {
+      font-size: 14px;
+      color: #656565;
+      font-weight: 600;
+      background: #f0f2f5;
+      padding: 2px 10px;
+      border-radius: 20px;
+    }
+    .status {
+      text-align: center;
+      font-size: 15px;
+      color: #656565;
+      padding: 12px;
+      background: #fff;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="questText" class="quest-text">Загрузка квеста...</div>
+    <div id="timerBlock" class="timer hidden">До окончания голосования: <span id="timerValue">30</span> сек.</div>
+    <div id="optionsBlock" class="options"></div>
+    <div id="statusBlock" class="status hidden"></div>
+  </div>
+
+  <script>
+    // ================== ИНИЦИАЛИЗАЦИЯ VK BRIDGE ==================
+    // Согласно требованиям VK Mini Apps, событие VKWebAppInit должно быть
+    // отправлено до загрузки основных ресурсов приложения (не позднее 30 секунд).
+    // Если приложение открыто вне VK, bridge может быть недоступен — используем
+    // безопасную проверку.
+    if (typeof vkBridge !== 'undefined') {
+      vkBridge.send('VKWebAppInit').catch(err => {
+        console.warn('VKWebAppInit не отправлен:', err);
+      });
+    } else {
+      console.warn('VK Bridge не загружен. Приложение работает в автономном режиме.');
+    }
+
+    // ================== ДАННЫЕ КВЕСТА ==================
+    // Каждый узел содержит текст и варианты ответов.
+    // Переходы ведут к следующим узлам в зависимости от победившего варианта.
+    const questData = {
+      start: {
+        text: '🌲 Вы очнулись в тёмном лесу. Рядом журчит ручей, а вдалеке виднеется свет. Куда пойдёте?',
+        options: [
+          { id: 'river', label: 'Пойти вдоль ручья', next: 'river' },
+          { id: 'light', label: 'Направиться к свету', next: 'light' }
+        ]
+      },
+      river: {
+        text: '💧 Ручей привёл вас к старому мосту. Под мостом что-то блестит. Ваши действия?',
+        options: [
+          { id: 'bridge', label: 'Заглянуть под мост', next: 'treasure' },
+          { id: 'cross', label: 'Перейти мост и идти дальше', next: 'village' }
+        ]
+      },
+      light: {
+        text: '🔥 Свет оказался костром у хижины. Из хижины слышны голоса. Что будете делать?',
+        options: [
+          { id: 'knock', label: 'Постучать в дверь', next: 'village' },
+          { id: 'hide', label: 'Спрятаться и наблюдать', next: 'treasure' }
+        ]
+      },
+      treasure: {
+        text: '💰 Вы нашли старый сундук с картой! Теперь у вас есть ключ к разгадке. Квест завершён — вы победили!',
+        options: [
+          { id: 'restart', label: 'Пройти квест заново', next: 'start' }
+        ]
+      },
+      village: {
+        text: '🏘️ Вы вышли к деревне. Местные жители рассказали вам о древней легенде. Квест завершён — вы узнали тайну леса!',
+        options: [
+          { id: 'restart', label: 'Пройти квест заново', next: 'start' }
+        ]
+      }
+    };
+
+    const VOTE_DURATION = 30; // длительность голосования в секундах
+
+    // ================== СОСТОЯНИЕ ==================
+    // Загружаем сохранённое состояние из localStorage или начинаем с нуля.
+    // Храним: текущий узел, голоса пользователя, метку времени начала голосования.
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem('vk_quest_state');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          // Проверяем, не устарело ли сохранённое голосование (прошло больше VOTE_DURATION секунд)
+          if (parsed.voteStartedAt && (Date.now() - parsed.voteStartedAt) / 1000 > VOTE_DURATION) {
+            // Если время вышло, но результат ещё не обработан — обработаем при загрузке
+            return parsed;
+          }
+          return parsed;
+        }
+      } catch (e) {
+        console.warn('Ошибка загрузки состояния:', e);
+      }
+      return {
+        currentNode: 'start',
+        votes: {},           // { optionId: count }
+        userVote: null,      // id варианта, за который проголосовал пользователь
+        voteStartedAt: null, // timestamp начала голосования
+        isVotingActive: false,
+        resultProcessed: false
+      };
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem('vk_quest_state', JSON.stringify(state));
+      } catch (e) {
+        console.warn('Ошибка сохранения состояния:', e);
+      }
+    }
+
+    // ================== ЛОГИКА ГОЛОСОВАНИЯ ==================
+    // Голосование считается общим: голоса всех пользователей суммируются.
+    // Поскольку серверная часть отсутствует, голоса хранятся локально у каждого
+    // пользователя, а итоговый подсчёт происходит у него же. Для реального
+    // общего голосования требуется серверная часть (см. примечание ниже).
+
+    function startVoting() {
+      const node = questData[state.currentNode];
+      if (!node || !node.options) return;
+
+      // Инициализируем голоса для текущего узла, если их ещё нет
+      node.options.forEach(opt => {
+        if (!(opt.id in state.votes)) {
+          state.votes[opt.id] = 0;
+        }
+      });
+
+      state.voteStartedAt = Date.now();
+      state.isVotingActive = true;
+      state.resultProcessed = false;
+      saveState();
+
+      render();
+      startTimer();
+    }
+
+    let timerInterval = null;
+
+    function startTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+
+      const timerBlock = document.getElementById('timerBlock');
+      const timerValue = document.getElementById('timerValue');
+      timerBlock.classList.remove('hidden');
+
+      function updateTimer() {
+        const elapsed = (Date.now() - state.voteStartedAt) / 1000;
+        const remaining = Math.max(0, Math.ceil(VOTE_DURATION - elapsed));
+        timerValue.textContent = remaining;
+
+        if (remaining <= 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          finishVoting();
+        }
+      }
+
+      updateTimer();
+      timerInterval = setInterval(updateTimer, 200);
+    }
+
+    function finishVoting() {
+      state.isVotingActive = false;
+      state.resultProcessed = true;
+
+      const node = questData[state.currentNode];
+      if (!node || !node.options) return;
+
+      // Определяем победивший вариант: максимум голосов.
+      // При равенстве выбирается первый по порядку.
+      let winner = node.options[0];
+      let maxVotes = -1;
+      node.options.forEach(opt => {
+        const count = state.votes[opt.id] || 0;
+        if (count > maxVotes) {
+          maxVotes = count;
+          winner = opt;
+        }
+      });
+
+      // Переходим к следующему узлу
+      if (winner.next) {
+        state.currentNode = winner.next;
+        // Сбрасываем голоса для нового узла
+        state.votes = {};
+        state.userVote = null;
+        state.voteStartedAt = null;
+        state.resultProcessed = false;
+        saveState();
+
+        // Если следующий узел не является конечным, запускаем голосование заново
+        const nextNode = questData[state.currentNode];
+        if (nextNode && nextNode.options && nextNode.options.length > 0) {
+          // Небольшая задержка, чтобы пользователь увидел результат
+          setTimeout(() => startVoting(), 800);
+        } else {
+          render();
+        }
+      } else {
+        render();
+      }
+    }
+
+    function vote(optionId) {
+      if (!state.isVotingActive || state.userVote) return;
+
+      state.userVote = optionId;
+      state.votes[optionId] = (state.votes[optionId] || 0) + 1;
+      saveState();
+      render();
+    }
+
+    // ================== РЕНДЕРИНГ ==================
+    function render() {
+      const node = questData[state.currentNode];
+      if (!node) return;
+
+      const questText = document.getElementById('questText');
+      const optionsBlock = document.getElementById('optionsBlock');
+      const statusBlock = document.getElementById('statusBlock');
+      const timerBlock = document.getElementById('timerBlock');
+
+      questText.textContent = node.text;
+      optionsBlock.innerHTML = '';
+
+      // Если узел конечный (нет вариантов) — показываем кнопку перезапуска
+      if (!node.options || node.options.length === 0) {
+        timerBlock.classList.add('hidden');
+        statusBlock.classList.remove('hidden');
+        statusBlock.textContent = 'Квест завершён. Спасибо за участие!';
+        const restartBtn = document.createElement('button');
+        restartBtn.className = 'option-btn';
+        restartBtn.textContent = 'Пройти заново';
+        restartBtn.onclick = () => {
+          state = {
+            currentNode: 'start',
+            votes: {},
+            userVote: null,
+            voteStartedAt: null,
+            isVotingActive: false,
+            resultProcessed: false
+          };
+          saveState();
+          startVoting();
+        };
+        optionsBlock.appendChild(restartBtn);
+        return;
+      }
+
+      // Отрисовка вариантов
+      node.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        if (state.userVote === opt.id) {
+          btn.classList.add('voted');
+        }
+        btn.disabled = !state.isVotingActive || !!state.userVote;
+
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = opt.label;
+
+        const countSpan = document.createElement('span');
+        countSpan.className = 'vote-count';
+        countSpan.textContent = state.votes[opt.id] || 0;
+
+        btn.appendChild(labelSpan);
+        btn.appendChild(countSpan);
+        btn.onclick = () => vote(opt.id);
+        optionsBlock.appendChild(btn);
+      });
+
+      // Статус
+      if (state.isVotingActive) {
+        statusBlock.classList.add('hidden');
+        timerBlock.classList.remove('hidden');
+      } else if (state.userVote && !state.resultProcessed) {
+        statusBlock.classList.remove('hidden');
+        statusBlock.textContent = 'Ваш голос принят. Ожидайте результатов...';
+        timerBlock.classList.remove('hidden');
+      } else if (!state.isVotingActive && state.resultProcessed) {
+        statusBlock.classList.remove('hidden');
+        statusBlock.textContent = 'Голосование завершено. Переход...';
+        timerBlock.classList.add('hidden');
+      } else {
+        statusBlock.classList.add('hidden');
+        timerBlock.classList.add('hidden');
+      }
+    }
+
+    // ================== ЗАПУСК ==================
+    // Если голосование не активно и нет сохранённого состояния — начинаем с первого узла.
+    if (!state.voteStartedAt && !state.resultProcessed) {
+      startVoting();
+    } else {
+      // Если голосование уже шло — возобновляем таймер.
+      if (state.isVotingActive && state.voteStartedAt) {
+        render();
+        startTimer();
+      } else {
+        render();
+      }
+    }
+
+    // Обработка закрытия приложения: сохраняем состояние
+    window.addEventListener('beforeunload', saveState);
+  </script>
+</body>
+</html>
