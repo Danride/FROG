@@ -4,13 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Текстовый квест сообщества</title>
-  <!-- Подключаем VK Bridge -->
+
+  <!-- ================== VK BRIDGE ================== -->
   <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+  <script>
+    // Инициализация приложения: обязательно для VK Mini Apps.
+    // Отправляем событие сразу, как только загрузился bridge.
+    if (typeof vkBridge !== 'undefined') {
+      vkBridge.send('VKWebAppInit')
+        .then(() => console.log('VKWebAppInit отправлен успешно'))
+        .catch(err => console.warn('Ошибка VKWebAppInit:', err));
+    } else {
+      console.warn('VK Bridge не загружен. Приложение работает автономно.');
+    }
+  </script>
+
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+    }
+    html, body {
+      width: 100%;
+      overflow-x: hidden;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -69,6 +86,7 @@
       justify-content: space-between;
       align-items: center;
       color: #000;
+      font-family: inherit;
     }
     .option-btn:hover {
       border-color: #2688eb;
@@ -112,22 +130,69 @@
   </div>
 
   <script>
-    // ================== ИНИЦИАЛИЗАЦИЯ VK BRIDGE ==================
-    // Согласно требованиям VK Mini Apps, событие VKWebAppInit должно быть
-    // отправлено до загрузки основных ресурсов приложения (не позднее 30 секунд).
-    // Если приложение открыто вне VK, bridge может быть недоступен — используем
-    // безопасную проверку.
-    if (typeof vkBridge !== 'undefined') {
-      vkBridge.send('VKWebAppInit').catch(err => {
-        console.warn('VKWebAppInit не отправлен:', err);
+    // ================== РАБОТА С VK BRIDGE ==================
+    // Проверяем, доступен ли bridge (например, при открытии вне VK он может отсутствовать)
+    const isVKBridgeAvailable = typeof vkBridge !== 'undefined';
+
+    // ---------- Получение параметров запуска ----------
+    // Понадобится, если в будущем добавите серверную часть для общего голосования.
+    let vkLaunchParams = null;
+
+    async function fetchLaunchParams() {
+      if (!isVKBridgeAvailable) return null;
+      try {
+        const params = await vkBridge.send('VKWebAppGetLaunchParams');
+        vkLaunchParams = params;
+        console.log('VK Launch Params:', params);
+        return params;
+      } catch (e) {
+        console.warn('Не удалось получить параметры запуска:', e);
+        return null;
+      }
+    }
+
+    // ---------- Изменение высоты iframe ----------
+    // Виджет в сообществе отображается в iframe. Чтобы контент не обрезался,
+    // нужно периодически сообщать VK желаемую высоту.
+    let lastSentHeight = 0;
+
+    function resizeWidget() {
+      if (!isVKBridgeAvailable) return;
+      // Считаем полную высоту контента
+      const height = Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight,
+        document.body.offsetHeight
+      );
+      // Отправляем только если высота реально изменилась
+      if (Math.abs(height - lastSentHeight) < 2) return;
+      lastSentHeight = height;
+
+      vkBridge.send('VKWebAppResizeWindow', {
+        width: window.innerWidth,
+        height: height
+      }).catch(err => console.warn('Ошибка изменения высоты:', err));
+    }
+
+    // Реагируем на изменение размеров окна и на перерисовку интерфейса
+    window.addEventListener('load', () => {
+      fetchLaunchParams();
+      // Даём DOM чуть-чуть "устояться" и отправляем высоту
+      setTimeout(resizeWidget, 100);
+    });
+    window.addEventListener('resize', resizeWidget);
+
+    // Наблюдаем за изменениями DOM, чтобы вовремя обновить высоту
+    if (typeof MutationObserver !== 'undefined') {
+      const observer = new MutationObserver(() => {
+        // Дебаунс: не чаще, чем раз в 150 мс
+        clearTimeout(window.__resizeTimer);
+        window.__resizeTimer = setTimeout(resizeWidget, 150);
       });
-    } else {
-      console.warn('VK Bridge не загружен. Приложение работает в автономном режиме.');
+      observer.observe(document.body, { childList: true, subtree: true, attributes: true });
     }
 
     // ================== ДАННЫЕ КВЕСТА ==================
-    // Каждый узел содержит текст и варианты ответов.
-    // Переходы ведут к следующим узлам в зависимости от победившего варианта.
     const questData = {
       start: {
         text: '🌲 Вы очнулись в тёмном лесу. Рядом журчит ручей, а вдалеке виднеется свет. Куда пойдёте?',
@@ -167,30 +232,20 @@
     const VOTE_DURATION = 30; // длительность голосования в секундах
 
     // ================== СОСТОЯНИЕ ==================
-    // Загружаем сохранённое состояние из localStorage или начинаем с нуля.
-    // Храним: текущий узел, голоса пользователя, метку времени начала голосования.
     let state = loadState();
 
     function loadState() {
       try {
         const saved = localStorage.getItem('vk_quest_state');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          // Проверяем, не устарело ли сохранённое голосование (прошло больше VOTE_DURATION секунд)
-          if (parsed.voteStartedAt && (Date.now() - parsed.voteStartedAt) / 1000 > VOTE_DURATION) {
-            // Если время вышло, но результат ещё не обработан — обработаем при загрузке
-            return parsed;
-          }
-          return parsed;
-        }
+        if (saved) return JSON.parse(saved);
       } catch (e) {
         console.warn('Ошибка загрузки состояния:', e);
       }
       return {
         currentNode: 'start',
-        votes: {},           // { optionId: count }
-        userVote: null,      // id варианта, за который проголосовал пользователь
-        voteStartedAt: null, // timestamp начала голосования
+        votes: {},
+        userVote: null,
+        voteStartedAt: null,
         isVotingActive: false,
         resultProcessed: false
       };
@@ -205,20 +260,12 @@
     }
 
     // ================== ЛОГИКА ГОЛОСОВАНИЯ ==================
-    // Голосование считается общим: голоса всех пользователей суммируются.
-    // Поскольку серверная часть отсутствует, голоса хранятся локально у каждого
-    // пользователя, а итоговый подсчёт происходит у него же. Для реального
-    // общего голосования требуется серверная часть (см. примечание ниже).
-
     function startVoting() {
       const node = questData[state.currentNode];
       if (!node || !node.options) return;
 
-      // Инициализируем голоса для текущего узла, если их ещё нет
       node.options.forEach(opt => {
-        if (!(opt.id in state.votes)) {
-          state.votes[opt.id] = 0;
-        }
+        if (!(opt.id in state.votes)) state.votes[opt.id] = 0;
       });
 
       state.voteStartedAt = Date.now();
@@ -262,8 +309,7 @@
       const node = questData[state.currentNode];
       if (!node || !node.options) return;
 
-      // Определяем победивший вариант: максимум голосов.
-      // При равенстве выбирается первый по порядку.
+      // Победитель — максимум голосов; при равенстве первый по порядку
       let winner = node.options[0];
       let maxVotes = -1;
       node.options.forEach(opt => {
@@ -274,20 +320,16 @@
         }
       });
 
-      // Переходим к следующему узлу
       if (winner.next) {
         state.currentNode = winner.next;
-        // Сбрасываем голоса для нового узла
         state.votes = {};
         state.userVote = null;
         state.voteStartedAt = null;
         state.resultProcessed = false;
         saveState();
 
-        // Если следующий узел не является конечным, запускаем голосование заново
         const nextNode = questData[state.currentNode];
         if (nextNode && nextNode.options && nextNode.options.length > 0) {
-          // Небольшая задержка, чтобы пользователь увидел результат
           setTimeout(() => startVoting(), 800);
         } else {
           render();
@@ -299,7 +341,6 @@
 
     function vote(optionId) {
       if (!state.isVotingActive || state.userVote) return;
-
       state.userVote = optionId;
       state.votes[optionId] = (state.votes[optionId] || 0) + 1;
       saveState();
@@ -319,7 +360,7 @@
       questText.textContent = node.text;
       optionsBlock.innerHTML = '';
 
-      // Если узел конечный (нет вариантов) — показываем кнопку перезапуска
+      // Конечный узел — показываем перезапуск
       if (!node.options || node.options.length === 0) {
         timerBlock.classList.add('hidden');
         statusBlock.classList.remove('hidden');
@@ -340,6 +381,7 @@
           startVoting();
         };
         optionsBlock.appendChild(restartBtn);
+        resizeWidget();
         return;
       }
 
@@ -347,9 +389,7 @@
       node.options.forEach(opt => {
         const btn = document.createElement('button');
         btn.className = 'option-btn';
-        if (state.userVote === opt.id) {
-          btn.classList.add('voted');
-        }
+        if (state.userVote === opt.id) btn.classList.add('voted');
         btn.disabled = !state.isVotingActive || !!state.userVote;
 
         const labelSpan = document.createElement('span');
@@ -365,7 +405,7 @@
         optionsBlock.appendChild(btn);
       });
 
-      // Статус
+      // Статус и таймер
       if (state.isVotingActive) {
         statusBlock.classList.add('hidden');
         timerBlock.classList.remove('hidden');
@@ -381,14 +421,15 @@
         statusBlock.classList.add('hidden');
         timerBlock.classList.add('hidden');
       }
+
+      // После перерисовки сообщаем ВК новую высоту
+      resizeWidget();
     }
 
     // ================== ЗАПУСК ==================
-    // Если голосование не активно и нет сохранённого состояния — начинаем с первого узла.
     if (!state.voteStartedAt && !state.resultProcessed) {
       startVoting();
     } else {
-      // Если голосование уже шло — возобновляем таймер.
       if (state.isVotingActive && state.voteStartedAt) {
         render();
         startTimer();
@@ -397,7 +438,7 @@
       }
     }
 
-    // Обработка закрытия приложения: сохраняем состояние
+    // Сохраняем состояние при закрытии
     window.addEventListener('beforeunload', saveState);
   </script>
 </body>
