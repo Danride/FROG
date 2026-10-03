@@ -1,775 +1,561 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#111318">
-
-<title>Коллективный текстовый квест</title>
-
-<!-- VK Bridge -->
-<script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
-
-<style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Активность сообщества</title>
+  <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+  <style>
     :root {
-        --bg: #111318;
-        --text: #f2f3f5;
-        --muted: #969ba5;
-        --panel: #191c23;
-        --panel-2: #222631;
-        --border: #292e38;
-        --border-2: #343a47;
-        --accent: #7aa7ff;
-        --accent-soft: #26385e;
-        --bar-bg: #101218;
-        --result-bg: #20242d;
-        --next-bg: #272c37;
-        --on-accent: #101218;
+      --vk-blue: #2688eb;
+      --vk-blue-dark: #1a6fc4;
+      --vk-bg: #edeef0;
+      --vk-card: #ffffff;
+      --vk-text: #000000;
+      --vk-sub: #818c99;
+      --vk-border: #e5e8ec;
+      --vk-green: #4bb34b;
+      --vk-red: #e64646;
+      --vk-orange: #ffa000;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--vk-bg);
+      color: var(--vk-text);
+      font-size: 15px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 720px; margin: 0 auto; padding: 12px; }
+    .card {
+      background: var(--vk-card);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    h2 { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
+    h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    p  { color: var(--vk-sub); margin-bottom: 10px; }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--vk-blue);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: var(--vk-blue-dark); }
+    .btn.secondary {
+      background: #f0f2f5;
+      color: var(--vk-blue);
+    }
+    .btn.secondary:hover { background: #e5e8ec; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Лендинг */
+    .landing-hero {
+      text-align: center;
+      padding: 32px 16px;
+    }
+    .landing-hero .logo {
+      width: 80px; height: 80px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #2688eb, #4bb34b);
+      margin: 0 auto 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px; color: #fff;
+    }
+    .features { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+    .feature { display: flex; gap: 12px; align-items: flex-start; }
+    .feature .ico {
+      width: 40px; height: 40px; flex-shrink: 0;
+      border-radius: 10px;
+      background: #e7f0fd;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .feature .txt h3 { margin-bottom: 2px; }
+    .feature .txt p { margin: 0; font-size: 14px; }
+
+    /* Роль бейдж */
+    .role-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .role-admin   { background: #ffe0e0; color: #c0392b; }
+    .role-member  { background: #dff0ff; color: #1a6fc4; }
+    .role-none    { background: #f0f2f5; color: #818c99; }
+
+    /* Статистика */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .stat {
+      background: #f7f9fb;
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .stat .label { font-size: 12px; color: var(--vk-sub); margin-bottom: 4px; }
+    .stat .value { font-size: 20px; font-weight: 700; }
+    .stat .value.green { color: var(--vk-green); }
+    .stat .value.blue  { color: var(--vk-blue); }
+    .stat .value.red   { color: var(--vk-red); }
+    .stat .value.orange{ color: var(--vk-orange); }
+
+    /* Таблица активности */
+    .activity-list { display: flex; flex-direction: column; gap: 8px; }
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: #f7f9fb;
+    }
+    .activity-item .avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      flex-shrink: 0;
+      background: #dbe4ee;
+      display: flex; align-items: center; justify-content: center;
+      color: #4a5a6a; font-weight: 600; font-size: 15px;
+    }
+    .activity-item .info { flex: 1; min-width: 0; }
+    .activity-item .info .name {
+      font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .activity-item .info .meta {
+      font-size: 12px; color: var(--vk-sub);
+    }
+    .activity-item .score {
+      font-weight: 700; font-size: 15px;
+      color: var(--vk-blue);
+      white-space: nowrap;
+    }
+    .online-dot {
+      display: inline-block;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--vk-green);
+      margin-right: 4px;
+      box-shadow: 0 0 0 2px #d7f0d7;
+    }
+    .offline-dot {
+      display: inline-block;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #c4c8cc;
+      margin-right: 4px;
     }
 
-    body.bright {
-        --bg: #f2f4f8;
-        --text: #14181f;
-        --muted: #6b7280;
-        --panel: #ffffff;
-        --panel-2: #f0f2f6;
-        --border: #e1e5ec;
-        --border-2: #d3d9e3;
-        --accent: #3b74e8;
-        --accent-soft: #dbe6ff;
-        --bar-bg: #e6eaf1;
-        --result-bg: #f0f3f9;
-        --next-bg: #e6eaf1;
-        --on-accent: #ffffff;
+    /* Плашка админа */
+    .admin-hint {
+      background: #fffbe6;
+      border-left: 4px solid var(--vk-orange);
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #6b5500;
+    }
+    .admin-hint b { color: #4a3a00; }
+
+    /* Прогресс-бар */
+    .progress {
+      height: 6px; border-radius: 3px;
+      background: #e5e8ec;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .progress > span {
+      display: block; height: 100%;
+      background: var(--vk-blue);
+      border-radius: 3px;
     }
 
-    * { box-sizing: border-box; }
+    /* Скрытие */
+    .hidden { display: none !important; }
 
-    body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--text);
-        font-family: Arial, sans-serif;
-        transition: background .25s, color .25s;
+    /* Загрузка */
+    .loader {
+      display: flex; align-items: center; justify-content: center;
+      padding: 40px;
     }
-
-    .game {
-        width: min(700px, 94%);
-        margin: 30px auto;
-        padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid #e5e8ec;
+      border-top-color: var(--vk-blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
     }
-
-    .header {
-        text-align: center;
-        margin-bottom: 25px;
-    }
-
-    .header h1 { margin-bottom: 8px; }
-
-    .header p { color: var(--muted); }
-
-    .user {
-        display: none;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        margin-top: 12px;
-        font-size: 14px;
-        color: var(--muted);
-    }
-
-    .user img {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-    }
-
-    /* Панель администратора / предложения виджета */
-    .admin-panel {
-        margin-top: 20px;
-        padding: 15px;
-        background: var(--panel-2);
-        border: 1px solid var(--border-2);
-        border-radius: 12px;
-        display: none;
-    }
-
-    .admin-panel h3 {
-        margin: 0 0 10px;
-        font-size: 15px;
-        color: var(--accent);
-    }
-
-    .admin-panel button {
-        width: 100%;
-        border: 0;
-        border-radius: 8px;
-        padding: 12px;
-        margin-top: 8px;
-        font-size: 14px;
-        font-weight: bold;
-        cursor: pointer;
-        font-family: inherit;
-        background: var(--accent);
-        color: var(--on-accent);
-        transition: .2s;
-    }
-
-    .admin-panel button:hover {
-        opacity: .9;
-    }
-
-    .admin-panel button.secondary {
-        background: var(--next-bg);
-        color: var(--text);
-        border: 1px solid var(--border-2);
-    }
-
-    .scene {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 25px;
-    }
-
-    .chapter {
-        color: var(--accent);
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 12px;
-    }
-
-    .story {
-        font-size: 18px;
-        line-height: 1.7;
-        white-space: pre-line;
-    }
-
-    .question {
-        margin-top: 25px;
-        font-size: 20px;
-        font-weight: bold;
-    }
-
-    .options {
-        display: grid;
-        gap: 12px;
-        margin-top: 18px;
-    }
-
-    .option {
-        background: var(--panel-2);
-        border: 1px solid var(--border-2);
-        color: var(--text);
-        padding: 16px;
-        border-radius: 12px;
-        cursor: pointer;
-        text-align: left;
-        transition: .2s;
-        font-family: inherit;
-    }
-
-    .option:hover {
-        border-color: var(--accent);
-    }
-
-    .option.selected {
-        border-color: var(--accent);
-        background: var(--accent-soft);
-    }
-
-    .option-title {
-        font-weight: bold;
-        font-size: 16px;
-    }
-
-    .option-text {
-        margin-top: 5px;
-        color: var(--muted);
-        font-size: 14px;
-    }
-
-    .votes { margin-top: 12px; }
-
-    .vote-info {
-        display: flex;
-        justify-content: space-between;
-        color: var(--muted);
-        font-size: 13px;
-        margin-bottom: 5px;
-    }
-
-    .bar {
-        height: 7px;
-        background: var(--bar-bg);
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .bar-fill {
-        height: 100%;
-        background: var(--accent);
-        width: 0%;
-        transition: width .4s;
-    }
-
-    .vote-button,
-    .next-button {
-        width: 100%;
-        border: 0;
-        border-radius: 10px;
-        padding: 15px;
-        margin-top: 20px;
-        font-size: 16px;
-        font-weight: bold;
-        cursor: pointer;
-        font-family: inherit;
-    }
-
-    .vote-button {
-        background: var(--accent);
-        color: var(--on-accent);
-    }
-
-    .next-button {
-        background: var(--next-bg);
-        color: var(--text);
-        display: none;
-    }
-
-    .vote-button:disabled {
-        opacity: .5;
-        cursor: not-allowed;
-    }
-
-    .result {
-        margin-top: 20px;
-        padding: 15px;
-        background: var(--result-bg);
-        border-radius: 10px;
-        display: none;
-        line-height: 1.5;
-    }
-
-    .stats {
-        margin-top: 15px;
-        color: var(--muted);
-        text-align: center;
-        font-size: 13px;
-    }
-</style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
-
 <body>
 
-<div class="game">
+<div class="container">
 
-    <div class="header">
-        <h1>🌑 Последний сигнал</h1>
-        <p>Коллективный текстовый квест</p>
-        <div class="user" id="user"></div>
+  <!-- ═══════════════ ЭКРАН ЗАГРУЗКИ ═══════════════ -->
+  <div id="screen-loading" class="loader">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- ═══════════════ ЭКРАН 1: ЛЕНДИНГ (нет vk_group_id) ═══════════════ -->
+  <div id="screen-landing" class="hidden">
+    <div class="card landing-hero">
+      <div class="logo">📊</div>
+      <h1>Активность сообщества</h1>
+      <p>Показывает, кто из участников активен: онлайн, лайки, комментарии, посты и репосты.</p>
     </div>
 
-    <!-- Панель для администратора сообщества -->
-    <div class="admin-panel" id="adminPanel">
-        <h3>⚙️ Управление виджетом</h3>
-        <button id="addWidgetBtn">📌 Добавить виджет в сообщество</button>
-        <button class="secondary" id="previewWidgetBtn">👁 Предпросмотр виджета</button>
+    <div class="card">
+      <h2>Что умеет плагин</h2>
+      <div class="features">
+        <div class="feature">
+          <div class="ico">🟢</div>
+          <div class="txt">
+            <h3>Онлайн-статусы</h3>
+            <p>Кто сейчас в сети, а кто заходил недавно.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="ico">❤️</div>
+          <div class="txt">
+            <h3>Лайки и реакции</h3>
+            <p>Рейтинг самых активных по лайкам за период.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="ico">💬</div>
+          <div class="txt">
+            <h3>Комментарии и посты</h3>
+            <p>Кто пишет, обсуждает и создаёт контент.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="ico">🔁</div>
+          <div class="txt">
+            <h3>Репосты</h3>
+            <p>Кто делится записями сообщества с друзьями.</p>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="scene">
-
-        <div class="chapter" id="chapter">Глава 1</div>
-
-        <div class="story" id="story"></div>
-
-        <div class="question" id="question"></div>
-
-        <div class="options" id="options"></div>
-
-        <button class="vote-button" id="voteButton" disabled>
-            Проголосовать
-        </button>
-
-        <div class="result" id="result"></div>
-
-        <button class="next-button" id="nextButton">
-            Продолжить сюжет →
-        </button>
-
-        <div class="stats" id="stats"></div>
-
+    <div class="card">
+      <h2>Чем отличается от других</h2>
+      <p>• Работает прямо внутри сообщества, без перехода в отдельное приложение.</p>
+      <p>• Разные экраны для администраторов и подписчиков.</p>
+      <p>• Гибкая настройка периода и метрик активности.</p>
     </div>
 
+    <div class="card">
+      <h2>Установить в сообщество</h2>
+      <p>Нажмите кнопку, выберите сообщество — и плагин появится в разделе «Приложения».</p>
+      <button id="btn-install" class="btn">📥 Установить плагин</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ ЭКРАН 2: КОНТЕКСТ СООБЩЕСТВА ═══════════════ -->
+  <div id="screen-community" class="hidden">
+
+    <!-- Шапка -->
+    <div class="card">
+      <h1 id="group-title">Сообщество</h1>
+      <p>
+        <span id="group-id-label"></span>
+        <span id="role-badge" class="role-badge role-none">роль</span>
+      </p>
+    </div>
+
+    <!-- Подсказка администратору -->
+    <div id="admin-hint" class="card hidden">
+      <div class="admin-hint">
+        <b>Вы администратор.</b> Чтобы плагин корректно работал:
+        <br>1. Убедитесь, что в разделе <b>Настройки → Информация</b> включено «Запуск приложения из сообщества».
+        <br>2. В <b>Настройки → Размещение</b> состояние для пользователей = <b>Включено</b>.
+        <br>3. Загрузите иконки в <b>Настройки → Оформление</b>.
+      </div>
+    </div>
+
+    <!-- Сводная статистика -->
+    <div class="card">
+      <h2>Сводка активности</h2>
+      <div class="stats-grid" id="stats-grid"></div>
+    </div>
+
+    <!-- Список активности -->
+    <div class="card">
+      <h2 id="activity-title">Активность участников</h2>
+      <div class="activity-list" id="activity-list"></div>
+    </div>
+
+    <!-- Кнопки -->
+    <div class="card">
+      <button id="btn-refresh" class="btn secondary">🔄 Обновить данные</button>
+    </div>
+
+  </div>
 </div>
 
 <script>
+/* ============================================================
+   1. ИНИЦИАЛИЗАЦИЯ VK BRIDGE И ПОЛУЧЕНИЕ ПАРАМЕТРОВ ЗАПУСКА
+   ============================================================ */
+async function init() {
+  try {
+    // Обязательная инициализация приложения
+    await vkBridge.send('VKWebAppInit');
+  } catch (e) {
+    console.warn('VKWebAppInit не выполнен (возможно, запуск вне ВК):', e);
+  }
 
-const chapters = {
-    // ... (все главы без изменений) ...
-    // Чтобы не дублировать код, оставьте здесь ваш объект chapters без изменений
-    // Я покажу только начало, но в вашем файле он должен быть полностью
-    start: {
-        chapter: "Глава 1 — Последний сигнал",
-        story: `23:47.\n\nГород погрузился во тьму.\n\nТы сидишь один в своей квартире, когда старый радиоприёмник внезапно включается сам.\n\nСначала слышен только шум.\n\nЗатем голос:\n\n«Если ты это слышишь — не выходи на улицу».\n\nПомехи.\n\n«Они уже здесь».\n\nРадио замолкает.\n\nЧерез несколько секунд в дверь раздаётся три удара.\n\nТук.\n\nТук.\n\nТук.`,
-        question: "Что должна сделать группа?",
-        options: [
-            { title: "🔦 Открыть дверь", text: "Узнать, кто находится снаружи.", next: "door" },
-            { title: "📻 Проверить радио", text: "Попытаться восстановить сообщение.", next: "radio" },
-            { title: "🪟 Посмотреть в окно", text: "Понять, что происходит на улице.", next: "window" }
-        ]
-    },
-    // ... остальные главы ...
-};
-
-
-/* ==========================================================
-   VK BRIDGE — ПОЛНАЯ ИНТЕГРАЦИЯ
-   ========================================================== */
-
-const bridge = window.vkBridge || null;
-
-let vkReady = false;
-let vkUser  = null;
-let vkLaunchParams = null;
-
-const STORAGE_KEY = 'quest_progress_v1';
-
-/**
- * Обёртка с таймаутом
- */
-function withTimeout(promise, ms = 5000) {
-    return Promise.race([
-        promise,
-        new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('vk-bridge timeout')), ms)
-        )
-    ]);
-}
-
-/**
- * Инициализация VK Mini App
- */
-async function initVK() {
-    if (!bridge) {
-        console.info('[VK] vk-bridge не загружен — обычный режим браузера');
-        return;
-    }
-
-    try {
-        await withTimeout(bridge.send('VKWebAppInit'));
-        vkReady = true;
-        console.info('[VK] VKWebAppInit OK');
-    } catch (e) {
-        console.warn('[VK] Не удалось инициализировать:', e.message);
-        return;
-    }
-
-    bridge.subscribe(handleVKEvent);
-
-    // Параметры запуска (для определения, запущено ли приложение в сообществе)
-    try {
-        vkLaunchParams = await withTimeout(
-            bridge.send('VKWebAppGetLaunchParams')
-        );
-        console.info('[VK] Launch params:', vkLaunchParams);
-    } catch (e) {
-        console.warn('[VK] Launch params error:', e.message);
-    }
-
-    // Тема оформления
-    try {
-        const config = await withTimeout(bridge.send('VKWebAppGetConfig'));
-        if (config && config.scheme) applyScheme(config.scheme);
-    } catch (e) { /* не критично */ }
-
-    // Данные пользователя
-    try {
-        vkUser = await withTimeout(bridge.send('VKWebAppGetUserInfo'));
-        renderUser();
-        await checkAdminRights();
-    } catch (e) {
-        console.warn('[VK] Не удалось получить профиль:', e.message);
-    }
-}
-
-/**
- * Обработка событий VK
- */
-function handleVKEvent(event) {
-    const type = event.detail && event.detail.type;
-
-    if (type === 'VKWebAppUpdateConfig') {
-        applyScheme(event.detail.data.scheme);
-    }
-}
-
-/**
- * Применяет тему VK
- */
-function applyScheme(scheme) {
-    const isLight = scheme === 'bright' || scheme === 'vkcom_light';
-    document.body.classList.toggle('bright', isLight);
-
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = isLight ? '#f2f4f8' : '#111318';
-}
-
-/**
- * Показывает имя и аватар игрока
- */
-function renderUser() {
-    if (!vkUser) return;
-
-    const el = document.getElementById('user');
-    el.innerHTML = `
-        <img src="${vkUser.photo_100}" alt="">
-        <span>${vkUser.first_name} ${vkUser.last_name}</span>
-    `;
-    el.style.display = 'flex';
-}
-
-/* ---------- ПРОВЕРКА ПРАВ АДМИНИСТРАТОРА ---------- */
-
-/**
- * Проверяет, является ли пользователь администратором сообщества,
- * из которого запущено приложение.
- * Если да — показывает панель управления виджетом.
- */
-async function checkAdminRights() {
-    if (!vkReady || !vkLaunchParams) return;
-
-    const groupId = vkLaunchParams.vk_group_id;
-    const viewerRole = vkLaunchParams.vk_viewer_group_role;
-
-    // Если приложение запущено не из сообщества — скрываем панель
-    if (!groupId) return;
-
-    // Роли администратора: admin, editor, moderator
-    const isAdmin = viewerRole === 'admin' ||
-                    viewerRole === 'editor' ||
-                    viewerRole === 'moderator';
-
-    if (isAdmin) {
-        document.getElementById('adminPanel').style.display = 'block';
-        console.info('[VK] Пользователь — администратор сообщества', groupId);
-    }
-}
-
-/* ---------- ДОБАВЛЕНИЕ ВИДЖЕТА В СООБЩЕСТВО ---------- */
-
-/**
- * Открывает нативное окно выбора сообщества для установки виджета.
- * ВАЖНО: В настройках приложения должна стоять галочка
- * «Разрешить установку в сообществах»:
- * https://vk.com/editapp?id={app_id}
- */
-async function addWidgetToCommunity() {
-    if (!vkReady) {
-        alert('VK Bridge недоступен. Откройте приложение внутри ВКонтакте.');
-        return;
-    }
-
-    try {
-        const result = await bridge.send('VKWebAppAddToCommunity', {
-            // hide_success_modal: false — показывать модальное окно успеха
-            // (доступно в vk-bridge >= 2.15.7)
-        });
-
-        if (result && result.group_id) {
-            console.info('[VK] Виджет добавлен в сообщество:', result.group_id);
-            alert('✅ Виджет успешно добавлен в сообщество!');
-        } else {
-            console.info('[VK] Пользователь закрыл окно выбора сообщества');
-        }
-    } catch (error) {
-        console.error('[VK] Ошибка добавления виджета:', error);
-        alert('❌ Не удалось добавить виджет. Убедитесь, что приложение разрешено для установки в сообществах.');
-    }
-}
-
-/**
- * Показывает предпросмотр виджета (для администраторов).
- * Использует событие VKWebAppShowCommunityWidgetPreviewBox.
- * Тип виджета: 'text' — текстовый виджет.
- * code — JSON-строка с настройками виджета.
- */
-async function previewWidget() {
-    if (!vkReady) {
-        alert('VK Bridge недоступен.');
-        return;
-    }
-
-    const groupId = vkLaunchParams && vkLaunchParams.vk_group_id;
-    if (!groupId) {
-        alert('Приложение запущено не из сообщества.');
-        return;
-    }
-
-    // Пример конфигурации текстового виджета
-    const widgetCode = JSON.stringify({
-        title: 'Последний сигнал',
-        text: 'Присоединяйтесь к коллективному квесту!',
-        button: {
-            title: 'Играть',
-            url: 'https://vk.com/app' + (vkLaunchParams.vk_app_id || '')
-        }
-    });
-
-    try {
-        await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
-            group_id: Number(groupId),
-            type: 'text',
-            code: widgetCode
-        });
-        console.info('[VK] Предпросмотр виджета открыт');
-    } catch (error) {
-        console.error('[VK] Ошибка предпросмотра виджета:', error);
-        alert('❌ Не удалось открыть предпросмотр. Возможно, метод не поддерживается на этой платформе.');
-    }
-}
-
-/* ---------- Хранилище (VK Storage + localStorage fallback) ---------- */
-
-async function storageGet(key) {
-    if (vkReady) {
-        try {
-            const res = await withTimeout(
-                bridge.send('VKWebAppStorageGet', { keys: [key] })
-            );
-            const item = res.keys.find(k => k.key === key);
-            if (item && item.value) return item.value;
-        } catch (e) {
-            console.warn('[VK] StorageGet error:', e.message);
-        }
-    }
-    try { return localStorage.getItem(key) || ''; } catch (e) { return ''; }
-}
-
-async function storageSet(key, value) {
-    if (vkReady) {
-        try {
-            await withTimeout(
-                bridge.send('VKWebAppStorageSet', { key, value })
-            );
-        } catch (e) {
-            console.warn('[VK] StorageSet error:', e.message);
-        }
-    }
-    try { localStorage.setItem(key, value); } catch (e) {}
-}
-
-
-/* ==========================================================
-   ЛОГИКА ИГРЫ
-   ========================================================== */
-
-let votes = {};
-let myVotes = {};
-let currentScene = "start";
-let selected = null;
-let hasVoted = false;
-
-const chapterElement  = document.getElementById("chapter");
-const storyElement    = document.getElementById("story");
-const questionElement = document.getElementById("question");
-const optionsElement  = document.getElementById("options");
-const voteButton      = document.getElementById("voteButton");
-const nextButton      = document.getElementById("nextButton");
-const resultElement   = document.getElementById("result");
-const statsElement    = document.getElementById("stats");
-
-
-function loadScene(sceneName) {
-    const scene = chapters[sceneName];
-    if (!scene) return;
-
-    currentScene = sceneName;
-    selected = null;
-    hasVoted = false;
-
-    chapterElement.textContent  = scene.chapter;
-    storyElement.textContent    = scene.story;
-    questionElement.textContent = scene.question;
-
-    optionsElement.innerHTML = "";
-
-    scene.options.forEach((option, index) => {
-        const button = document.createElement("button");
-        button.className = "option";
-        button.type = "button";
-
-        button.innerHTML = `
-            <div class="option-title">${option.title}</div>
-            <div class="option-text">${option.text}</div>
-            <div class="votes">
-                <div class="vote-info">
-                    <span class="vote-count">0 голосов</span>
-                    <span class="vote-percent">0%</span>
-                </div>
-                <div class="bar">
-                    <div class="bar-fill"></div>
-                </div>
-            </div>
-        `;
-
-        button.addEventListener("click", () => {
-            if (hasVoted) return;
-            selected = index;
-            document.querySelectorAll(".option")
-                .forEach(el => el.classList.remove("selected"));
-            button.classList.add("selected");
-            voteButton.disabled = false;
-        });
-
-        optionsElement.appendChild(button);
-    });
-
-    voteButton.style.display = "block";
-    voteButton.disabled = true;
-    resultElement.style.display = "none";
-    nextButton.style.display = "none";
-
-    updateVotes();
-
-    if (myVotes[currentScene] !== undefined) {
-        showResult(myVotes[currentScene]);
-    }
-}
-
-
-function updateVotes() {
-    const sceneVotes = votes[currentScene] || [];
-    const total = sceneVotes.reduce((sum, value) => sum + value, 0);
-
-    document.querySelectorAll(".option").forEach((element, index) => {
-        const count = sceneVotes[index] || 0;
-        const percent = total > 0
-            ? Math.round(count / total * 100)
-            : 0;
-
-        element.querySelector(".vote-count")
-            .textContent = `${count} голосов`;
-        element.querySelector(".vote-percent")
-            .textContent = `${percent}%`;
-        element.querySelector(".bar-fill")
-            .style.width = `${percent}%`;
-    });
-
-    statsElement.textContent = `Всего голосов: ${total}`;
-}
-
-
-function showResult(winnerIndex) {
-    hasVoted = true;
-    voteButton.style.display = "none";
-    updateVotes();
-
-    const optionEls = document.querySelectorAll(".option");
-    optionEls.forEach(el => el.classList.remove("selected"));
-    if (optionEls[winnerIndex]) optionEls[winnerIndex].classList.add("selected");
-
-    const winningOption = chapters[currentScene].options[winnerIndex];
-    if (!winningOption) return;
-
-    resultElement.style.display = "block";
-    resultElement.innerHTML = `
-        🗳️ <strong>Голосование завершено.</strong><br><br>
-        Сейчас лидирует:<br>
-        <strong>${winningOption.title}</strong><br>
-        ${winningOption.text}
-    `;
-
-    nextButton.style.display = "block";
-    nextButton.onclick = () => {
-        loadScene(winningOption.next);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+  let params = {};
+  try {
+    params = await vkBridge.send('VKWebAppGetLaunchParams');
+  } catch (e) {
+    // Локальная отладка без ВК
+    console.warn('Не удалось получить launch params, использую мок:', e);
+    params = {
+      vk_group_id: new URLSearchParams(location.search).get('vk_group_id'),
+      vk_viewer_group_role: new URLSearchParams(location.search).get('vk_viewer_group_role'),
     };
+  }
+
+  const groupId = Number(params.vk_group_id) || 0;
+  const role = params.vk_viewer_group_role || 'none';
+
+  hideAll();
+  if (groupId > 0) {
+    await renderCommunityScreen(groupId, role);
+  } else {
+    showScreen('screen-landing');
+  }
 }
 
+/* ============================================================
+   2. УТИЛИТЫ
+   ============================================================ */
+function hideAll() {
+  ['screen-loading', 'screen-landing', 'screen-community']
+    .forEach(id => document.getElementById(id).classList.add('hidden'));
+}
+function showScreen(id) {
+  document.getElementById(id).classList.remove('hidden');
+}
+function initials(name) {
+  return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+}
+function plural(n, one, few, many) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
+  return many;
+}
 
-voteButton.addEventListener("click", async () => {
-    if (selected === null || hasVoted) return;
+/* ============================================================
+   3. РЕНДЕР ЭКРАНА СООБЩЕСТВА
+   ============================================================ */
+async function renderCommunityScreen(groupId, role) {
+  showScreen('screen-community');
 
-    if (!votes[currentScene]) {
-        votes[currentScene] =
-            new Array(chapters[currentScene].options.length).fill(0);
-    }
+  document.getElementById('group-id-label').textContent = 'ID: ' + groupId;
 
-    votes[currentScene][selected]++;
-    myVotes[currentScene] = selected;
+  // Роль
+  const badge = document.getElementById('role-badge');
+  if (role === 'admin') {
+    badge.textContent = 'администратор';
+    badge.className = 'role-badge role-admin';
+    document.getElementById('admin-hint').classList.remove('hidden');
+  } else if (role === 'member') {
+    badge.textContent = 'подписчик';
+    badge.className = 'role-badge role-member';
+  } else {
+    badge.textContent = 'гость';
+    badge.className = 'role-badge role-none';
+  }
 
-    await storageSet(STORAGE_KEY, JSON.stringify(myVotes));
+  // Данные сообщества
+  const groupInfo = await loadGroupInfo(groupId);
+  document.getElementById('group-title').textContent = groupInfo.name;
 
-    // 🔌 Здесь можно отправить голос на свой сервер:
-    // await fetch('https://your-api/vote', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({
-    //         scene: currentScene,
-    //         option: selected,
-    //         user: vkUser ? vkUser.id : null
-    //     })
-    // });
+  // Данные активности
+  const activity = await loadActivity(groupId, role);
 
-    const sceneVotes = votes[currentScene];
-    let winner = 0;
-    for (let i = 1; i < sceneVotes.length; i++) {
-        if (sceneVotes[i] > sceneVotes[winner]) winner = i;
-    }
+  renderStats(activity.summary, role);
+  renderActivityList(activity.users, role);
 
-    showResult(winner);
+  if (role !== 'admin') {
+    document.getElementById('activity-title').textContent = 'Топ активных участников';
+  } else {
+    document.getElementById('activity-title').textContent = 'Полная активность участников';
+  }
+}
+
+/* ============================================================
+   4. ЗАГРУЗКА ДАННЫХ
+   ============================================================ */
+
+// Заглушка: реальные данные можно получить через VK API:
+//   https://api.vk.com/method/groups.getById?group_id=...
+async function loadGroupInfo(groupId) {
+  // TODO: реальный запрос к VK API (groups.getById)
+  return { id: groupId, name: 'Сообщество #' + groupId };
+}
+
+// Заглушка: реальные данные собираются из wall.get, likes.getList,
+//   stats.get, groups.getMembers и т.д.
+async function loadActivity(groupId, role) {
+  // TODO: реальный запрос к VK API.
+
+  // Демонстрационные данные
+  const users = [
+    { id: 1, name: 'Анна Иванова',   online: true,  likes: 142, comments: 37, posts: 5,  reposts: 12, last_seen: 'только что' },
+    { id: 2, name: 'Пётр Смирнов',   online: true,  likes: 98,  comments: 51, posts: 2,  reposts: 8,  last_seen: 'только что' },
+    { id: 3, name: 'Ольга Кузнецова',online: false, likes: 210, comments: 12, posts: 9,  reposts: 24, last_seen: '10 мин назад' },
+    { id: 4, name: 'Дмитрий Попов',  online: false, likes: 76,  comments: 44, posts: 1,  reposts: 3,  last_seen: '2 ч назад' },
+    { id: 5, name: 'Мария Орлова',   online: true,  likes: 133, comments: 28, posts: 4,  reposts: 17, last_seen: 'только что' },
+    { id: 6, name: 'Иван Петров',    online: false, likes: 54,  comments: 19, posts: 0,  reposts: 5,  last_seen: 'вчера' },
+    { id: 7, name: 'Елена Соколова', online: false, likes: 189, comments: 63, posts: 6,  reposts: 21, last_seen: '30 мин назад' },
+    { id: 8, name: 'Сергей Волков',  online: true,  likes: 67,  comments: 8,  posts: 3,  reposts: 2,  last_seen: 'только что' },
+  ];
+
+  // Считаем сводку
+  const summary = {
+    online:  users.filter(u => u.online).length,
+    total:   users.length,
+    likes:   users.reduce((s, u) => s + u.likes, 0),
+    comments:users.reduce((s, u) => s + u.comments, 0),
+    posts:   users.reduce((s, u) => s + u.posts, 0),
+    reposts: users.reduce((s, u) => s + u.reposts, 0),
+  };
+
+  // Для подписчиков оставляем только топ-5, для админов — всех
+  const visibleUsers = role === 'admin'
+    ? users.sort((a, b) => totalScore(b) - totalScore(a))
+    : users.sort((a, b) => totalScore(b) - totalScore(a)).slice(0, 5);
+
+  return { summary, users: visibleUsers };
+}
+
+function totalScore(u) {
+  return u.likes + u.comments * 2 + u.posts * 3 + u.reposts * 2;
+}
+
+/* ============================================================
+   5. РЕНДЕР СТАТИСТИКИ
+   ============================================================ */
+function renderStats(s, role) {
+  const grid = document.getElementById('stats-grid');
+  const items = [
+    { label: 'Онлайн сейчас', value: s.online + ' из ' + s.total, cls: 'green' },
+    { label: 'Лайков',        value: s.likes,                       cls: 'red'   },
+    { label: 'Комментариев',  value: s.comments,                    cls: 'blue'  },
+    { label: 'Постов',        value: s.posts,                       cls: 'orange'},
+  ];
+  if (role === 'admin') {
+    items.push({ label: 'Репостов', value: s.reposts, cls: 'blue' });
+  }
+
+  grid.innerHTML = items.map(i => `
+    <div class="stat">
+      <div class="label">${i.label}</div>
+      <div class="value ${i.cls}">${i.value}</div>
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   6. РЕНДЕР СПИСКА АКТИВНОСТИ
+   ============================================================ */
+function renderActivityList(users, role) {
+  const list = document.getElementById('activity-list');
+  if (!users.length) {
+    list.innerHTML = '<p>Нет данных об активности.</p>';
+    return;
+  }
+
+  const maxScore = totalScore(users[0]);
+
+  list.innerHTML = users.map((u, idx) => {
+    const score = totalScore(u);
+    const percent = Math.round((score / maxScore) * 100);
+    const dot = u.online
+      ? '<span class="online-dot"></span>'
+      : '<span class="offline-dot"></span>';
+
+    // Для подписчиков скрываем точные цифры лайков/комментариев
+    const meta = role === 'admin'
+      ? `❤️ ${u.likes} · 💬 ${u.comments} · 📝 ${u.posts} · 🔁 ${u.reposts}`
+      : `${u.online ? 'в сети' : 'был(а) ' + u.last_seen}`;
+
+    return `
+      <div class="activity-item">
+        <div class="avatar">${initials(u.name)}</div>
+        <div class="info">
+          <div class="name">${dot}${u.name}</div>
+          <div class="meta">${meta}</div>
+          <div class="progress"><span style="width:${percent}%"></span></div>
+        </div>
+        <div class="score">${role === 'admin' ? score : '#' + (idx + 1)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ============================================================
+   7. ОБРАБОТЧИК КНОПКИ УСТАНОВКИ (ЛЕНДИНГ)
+   ============================================================ */
+document.getElementById('btn-install').addEventListener('click', async () => {
+  try {
+    await vkBridge.send('VKWebAppAddToCommunity');
+    // После успешной установки можно переключить экран или показать уведомление
+    alert('Плагин добавлен в сообщество!');
+  } catch (e) {
+    console.error('Ошибка установки:', e);
+    alert('Не удалось установить плагин. Попробуйте ещё раз.');
+  }
 });
 
+/* ============================================================
+   8. ОБРАБОТЧИК ОБНОВЛЕНИЯ
+   ============================================================ */
+document.getElementById('btn-refresh').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-refresh');
+  btn.disabled = true;
+  btn.textContent = '⏳ Обновление…';
 
-async function loadProgress() {
-    const raw = await storageGet(STORAGE_KEY);
-    if (!raw) return;
+  try {
+    const params = await vkBridge.send('VKWebAppGetLaunchParams').catch(() => ({}));
+    const groupId = Number(params.vk_group_id) || 0;
+    const role = params.vk_viewer_group_role || 'none';
+    if (groupId > 0) await renderCommunityScreen(groupId, role);
+  } catch (e) {
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔄 Обновить данные';
+  }
+});
 
-    try {
-        myVotes = JSON.parse(raw) || {};
-    } catch (e) {
-        myVotes = {};
-        return;
-    }
-
-    Object.keys(myVotes).forEach(sceneName => {
-        const scene = chapters[sceneName];
-        if (!scene) return;
-
-        const index = myVotes[sceneName];
-        if (index < 0 || index >= scene.options.length) return;
-
-        if (!votes[sceneName]) {
-            votes[sceneName] = new Array(scene.options.length).fill(0);
-        }
-
-        votes[sceneName][index]++;
-    });
-}
-
-
-/* ---------- Обработчики кнопок панели ---------- */
-
-document.getElementById('addWidgetBtn')
-    .addEventListener('click', addWidgetToCommunity);
-
-document.getElementById('previewWidgetBtn')
-    .addEventListener('click', previewWidget);
-
-
-/* ---------- Старт ---------- */
-
-async function start() {
-    await initVK();
-    await loadProgress();
-    loadScene("start");
-}
-
-start();
-
+/* ============================================================
+   9. СТАРТ
+   ============================================================ */
+init();
 </script>
-
 </body>
 </html>
