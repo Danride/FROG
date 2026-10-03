@@ -1,445 +1,782 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Текстовый квест сообщества</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- ================== VK BRIDGE ================== -->
-  <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
-  <script>
-    // Инициализация приложения: обязательно для VK Mini Apps.
-    // Отправляем событие сразу, как только загрузился bridge.
-    if (typeof vkBridge !== 'undefined') {
-      vkBridge.send('VKWebAppInit')
-        .then(() => console.log('VKWebAppInit отправлен успешно'))
-        .catch(err => console.warn('Ошибка VKWebAppInit:', err));
-    } else {
-      console.warn('VK Bridge не загружен. Приложение работает автономно.');
-    }
-  </script>
+<title>Коллективный текстовый квест</title>
 
-  <style>
+<style>
     * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+        box-sizing: border-box;
     }
-    html, body {
-      width: 100%;
-      overflow-x: hidden;
-    }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f0f2f5;
-      color: #000;
-      padding: 16px;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+        margin: 0;
+        background: #111318;
+        color: #f2f3f5;
+        font-family: Arial, sans-serif;
     }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      width: 100%;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
+
+    .game {
+        width: min(700px, 94%);
+        margin: 30px auto;
     }
-    .quest-text {
-      background: #fff;
-      border-radius: 12px;
-      padding: 20px;
-      font-size: 17px;
-      line-height: 1.5;
-      margin-bottom: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      flex-shrink: 0;
+
+    .header {
+        text-align: center;
+        margin-bottom: 25px;
     }
-    .timer {
-      text-align: center;
-      font-size: 15px;
-      color: #656565;
-      margin-bottom: 12px;
+
+    .header h1 {
+        margin-bottom: 8px;
     }
-    .timer span {
-      font-weight: 600;
-      color: #e64646;
+
+    .header p {
+        color: #969ba5;
     }
+
+    .scene {
+        background: #191c23;
+        border: 1px solid #292e38;
+        border-radius: 16px;
+        padding: 25px;
+    }
+
+    .chapter {
+        color: #7aa7ff;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+    }
+
+    .story {
+        font-size: 18px;
+        line-height: 1.7;
+        white-space: pre-line;
+    }
+
+    .question {
+        margin-top: 25px;
+        font-size: 20px;
+        font-weight: bold;
+    }
+
     .options {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 20px;
-      flex: 1;
+        display: grid;
+        gap: 12px;
+        margin-top: 18px;
     }
-    .option-btn {
-      background: #fff;
-      border: 2px solid #e0e0e0;
-      border-radius: 10px;
-      padding: 14px 16px;
-      font-size: 16px;
-      text-align: left;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      color: #000;
-      font-family: inherit;
+
+    .option {
+        background: #222631;
+        border: 1px solid #343a47;
+        color: white;
+        padding: 16px;
+        border-radius: 12px;
+        cursor: pointer;
+        text-align: left;
+        transition: .2s;
     }
-    .option-btn:hover {
-      border-color: #2688eb;
+
+    .option:hover {
+        background: #2a3040;
+        border-color: #7aa7ff;
     }
-    .option-btn.voted {
-      border-color: #2688eb;
-      background: #e8f2fd;
+
+    .option.selected {
+        border-color: #7aa7ff;
+        background: #26385e;
     }
-    .option-btn:disabled {
-      opacity: 0.6;
-      cursor: default;
+
+    .option-title {
+        font-weight: bold;
+        font-size: 16px;
     }
-    .vote-count {
-      font-size: 14px;
-      color: #656565;
-      font-weight: 600;
-      background: #f0f2f5;
-      padding: 2px 10px;
-      border-radius: 20px;
+
+    .option-text {
+        margin-top: 5px;
+        color: #b5bac5;
+        font-size: 14px;
     }
-    .status {
-      text-align: center;
-      font-size: 15px;
-      color: #656565;
-      padding: 12px;
-      background: #fff;
-      border-radius: 10px;
-      margin-bottom: 10px;
+
+    .votes {
+        margin-top: 12px;
     }
-    .hidden {
-      display: none !important;
+
+    .vote-info {
+        display: flex;
+        justify-content: space-between;
+        color: #aeb4bf;
+        font-size: 13px;
+        margin-bottom: 5px;
     }
-  </style>
+
+    .bar {
+        height: 7px;
+        background: #101218;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .bar-fill {
+        height: 100%;
+        background: #7aa7ff;
+        width: 0%;
+        transition: width .4s;
+    }
+
+    .vote-button,
+    .next-button {
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 20px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .vote-button {
+        background: #7aa7ff;
+        color: #101218;
+    }
+
+    .next-button {
+        background: #272c37;
+        color: white;
+        display: none;
+    }
+
+    .vote-button:disabled {
+        opacity: .5;
+        cursor: not-allowed;
+    }
+
+    .result {
+        margin-top: 20px;
+        padding: 15px;
+        background: #20242d;
+        border-radius: 10px;
+        display: none;
+        line-height: 1.5;
+    }
+
+    .stats {
+        margin-top: 15px;
+        color: #858b97;
+        text-align: center;
+        font-size: 13px;
+    }
+</style>
 </head>
+
 <body>
-  <div class="container">
-    <div id="questText" class="quest-text">Загрузка квеста...</div>
-    <div id="timerBlock" class="timer hidden">До окончания голосования: <span id="timerValue">30</span> сек.</div>
-    <div id="optionsBlock" class="options"></div>
-    <div id="statusBlock" class="status hidden"></div>
-  </div>
 
-  <script>
-    // ================== РАБОТА С VK BRIDGE ==================
-    // Проверяем, доступен ли bridge (например, при открытии вне VK он может отсутствовать)
-    const isVKBridgeAvailable = typeof vkBridge !== 'undefined';
+<div class="game">
 
-    // ---------- Получение параметров запуска ----------
-    // Понадобится, если в будущем добавите серверную часть для общего голосования.
-    let vkLaunchParams = null;
+    <div class="header">
+        <h1>🌑 Последний сигнал</h1>
+        <p>Коллективный текстовый квест</p>
+    </div>
 
-    async function fetchLaunchParams() {
-      if (!isVKBridgeAvailable) return null;
-      try {
-        const params = await vkBridge.send('VKWebAppGetLaunchParams');
-        vkLaunchParams = params;
-        console.log('VK Launch Params:', params);
-        return params;
-      } catch (e) {
-        console.warn('Не удалось получить параметры запуска:', e);
-        return null;
-      }
+    <div class="scene">
+
+        <div class="chapter" id="chapter">
+            Глава 1
+        </div>
+
+        <div class="story" id="story"></div>
+
+        <div class="question" id="question"></div>
+
+        <div class="options" id="options"></div>
+
+        <button class="vote-button" id="voteButton" disabled>
+            Проголосовать
+        </button>
+
+        <div class="result" id="result"></div>
+
+        <button class="next-button" id="nextButton">
+            Продолжить сюжет →
+        </button>
+
+        <div class="stats" id="stats"></div>
+
+    </div>
+
+</div>
+
+<script>
+
+const chapters = {
+
+    start: {
+        chapter: "Глава 1 — Последний сигнал",
+
+        story: `23:47.
+
+Город погрузился во тьму.
+
+Ты сидишь один в своей квартире, когда старый радиоприёмник внезапно включается сам.
+
+Сначала слышен только шум.
+
+Затем голос:
+
+«Если ты это слышишь — не выходи на улицу».
+
+Помехи.
+
+«Они уже здесь».
+
+Радио замолкает.
+
+Через несколько секунд в дверь раздаётся три удара.
+
+Тук.
+
+Тук.
+
+Тук.`,
+
+        question: "Что должна сделать группа?",
+
+        options: [
+            {
+                title: "🔦 Открыть дверь",
+                text: "Узнать, кто находится снаружи.",
+                next: "door"
+            },
+            {
+                title: "📻 Проверить радио",
+                text: "Попытаться восстановить сообщение.",
+                next: "radio"
+            },
+            {
+                title: "🪟 Посмотреть в окно",
+                text: "Понять, что происходит на улице.",
+                next: "window"
+            }
+        ]
+    },
+
+    door: {
+        chapter: "Глава 2 — За дверью",
+
+        story: `Ты медленно подходишь к двери.
+
+За ней кто-то тяжело дышит.
+
+Затем голос произносит:
+
+«Не открывай...»
+
+Пауза.
+
+«...это не я».
+
+В этот момент ручка двери начинает медленно опускаться.`,
+
+        question: "Что делать?",
+
+        options: [
+            {
+                title: "🔒 Заблокировать дверь",
+                text: "Попытаться удержать неизвестного снаружи.",
+                next: "lock"
+            },
+            {
+                title: "👁 Посмотреть в глазок",
+                text: "Попытаться увидеть того, кто стоит там.",
+                next: "peek"
+            },
+            {
+                title: "🏃 Уйти из квартиры",
+                text: "Использовать запасной выход.",
+                next: "escape"
+            }
+        ]
+    },
+
+    radio: {
+        chapter: "Глава 2 — Частота",
+
+        story: `Ты возвращаешься к радио.
+
+Шум становится громче.
+
+Ты начинаешь вращать ручку настройки.
+
+87.4...
+
+91.2...
+
+102.7...
+
+На частоте 104.3 появляется голос:
+
+«Если вы меня слышите, у вас осталось меньше часа».
+
+Затем передатчик сообщает координаты.`,
+
+        question: "Что делать с координатами?",
+
+        options: [
+            {
+                title: "📍 Отправиться туда",
+                text: "Попытаться найти источник сигнала.",
+                next: "coordinates"
+            },
+            {
+                title: "📡 Ответить",
+                text: "Попробовать связаться с неизвестным.",
+                next: "answer"
+            },
+            {
+                title: "🔇 Выключить радио",
+                text: "Не рисковать и остаться дома.",
+                next: "hide"
+            }
+        ]
+    },
+
+    window: {
+        chapter: "Глава 2 — Улица",
+
+        story: `Ты подходишь к окну.
+
+На улице нет машин.
+
+Нет людей.
+
+Даже фонари погасли.
+
+Но примерно в трёхстах метрах от дома горит один единственный свет.
+
+И рядом с ним стоит человек.
+
+Он смотрит прямо на твоё окно.`,
+
+        question: "Что делать?",
+
+        options: [
+            {
+                title: "🔦 Посветить ему",
+                text: "Дать понять, что ты его заметил.",
+                next: "light"
+            },
+            {
+                title: "📸 Сфотографировать",
+                text: "Попробовать рассмотреть его через камеру.",
+                next: "photo"
+            },
+            {
+                title: "🪟 Закрыть шторы",
+                text: "Не привлекать внимания.",
+                next: "curtain"
+            }
+        ]
+    },
+
+    lock: {
+        chapter: "Глава 3",
+
+        story: `Ты прижимаешься к двери всем телом.
+
+Ручка перестаёт двигаться.
+
+Несколько секунд ничего не происходит.
+
+Затем из-за двери раздаётся знакомый голос:
+
+«Правильно.
+
+Не открывай».
+
+Ты узнаёшь этот голос.
+
+Это голос из радио.`,
+
+        question: "Продолжение следует...",
+
+        options: [
+            {
+                title: "▶ Начать заново",
+                text: "Попробовать другой путь.",
+                next: "start"
+            }
+        ]
+    },
+
+    peek: {
+        chapter: "Глава 3",
+
+        story: `Ты медленно приближаешься к глазку.
+
+Смотришь.
+
+На лестничной площадке никого нет.
+
+Но напротив двери стоит зеркало.
+
+И в зеркале отражается человек, который стоит прямо за тобой.`,
+
+        question: "Продолжение следует...",
+
+        options: [
+            {
+                title: "▶ Начать заново",
+                text: "Попробовать другой путь.",
+                next: "start"
+            }
+        ]
+    },
+
+    escape: {
+        chapter: "Глава 3",
+
+        story: `Ты выбегаешь через запасной выход.
+
+На улице абсолютно тихо.
+
+Телефон вибрирует.
+
+Новое сообщение:
+
+«Зачем вы вышли?»`,
+
+        question: "Продолжение следует...",
+
+        options: [
+            {
+                title: "▶ Начать заново",
+                text: "Попробовать другой путь.",
+                next: "start"
+            }
+        ]
+    },
+
+    coordinates: {
+        chapter: "Глава 3",
+
+        story: `Ты вводишь координаты в телефон.
+
+Точка находится прямо под городом.
+
+Но на карте там ничего нет.
+
+Только старый туннель.`,
+
+        question: "Продолжение следует...",
+
+        options: [
+            {
+                title: "▶ Начать заново",
+                text: "Попробовать другой путь.",
+                next: "start"
+            }
+        ]
+    },
+
+    answer: {
+        chapter: "Глава 3",
+
+        story: `Ты нажимаешь кнопку передачи.
+
+«Кто вы?»
+
+Ответ приходит мгновенно:
+
+«Мы — это вы. Через 17 минут».`,
+
+        question: "Продолжение следует...",
+
+        options: [
+            {
+                title: "▶ Начать заново",
+                text: "Попробовать другой путь.",
+                next: "start"
+            }
+        ]
+    },
+
+    hide: {
+        chapter: "Глава 3",
+
+        story: `Ты выключаешь радио.
+
+В квартире становится абсолютно тихо.
+
+Через несколько секунд телевизор включается сам.
+
+На экране появляется изображение твоей комнаты.
+
+Камера находится за твоей спиной.`,
+
+        question: "Продолжение следует...",
+
+        options: [
+            {
+                title: "▶ Начать заново",
+                text: "Попробовать другой путь.",
+                next: "start"
+            }
+        ]
+    },
+
+    light: {
+        chapter: "Глава 3",
+
+        story: `Ты включаешь фонарик.
+
+Человек на улице поднимает руку.
+
+И выключает свет.
+
+Теперь во всём городе снова загораются фонари.
+
+Но каждый из них находится рядом с человеком.`,
+
+        question: "Продолжение следует...",
+
+        options: [
+            {
+                title: "▶ Начать заново",
+                text: "Попробовать другой путь.",
+                next: "start"
+            }
+        ]
+    },
+
+    photo: {
+        chapter: "Глава 3",
+
+        story: `Ты делаешь фотографию.
+
+На экране телефона человек исчезает.
+
+Но появляется другое изображение.
+
+На нём твоя квартира.
+
+Снятая изнутри.`,
+
+        question: "Продолжение следует...",
+
+        options: [
+            {
+                title: "▶ Начать заново",
+                text: "Попробовать другой путь.",
+                next: "start"
+            }
+        ]
+    },
+
+    curtain: {
+        chapter: "Глава 3",
+
+        story: `Ты закрываешь шторы.
+
+Через несколько секунд кто-то стучит в окно.
+
+Ты живёшь на девятом этаже.`,
+
+        question: "Продолжение следует...",
+
+        options: [
+            {
+                title: "▶ Начать заново",
+                text: "Попробовать другой путь.",
+                next: "start"
+            }
+        ]
     }
 
-    // ---------- Изменение высоты iframe ----------
-    // Виджет в сообществе отображается в iframe. Чтобы контент не обрезался,
-    // нужно периодически сообщать VK желаемую высоту.
-    let lastSentHeight = 0;
+};
 
-    function resizeWidget() {
-      if (!isVKBridgeAvailable) return;
-      // Считаем полную высоту контента
-      const height = Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight,
-        document.body.offsetHeight
-      );
-      // Отправляем только если высота реально изменилась
-      if (Math.abs(height - lastSentHeight) < 2) return;
-      lastSentHeight = height;
 
-      vkBridge.send('VKWebAppResizeWindow', {
-        width: window.innerWidth,
-        height: height
-      }).catch(err => console.warn('Ошибка изменения высоты:', err));
-    }
+// Здесь хранятся голоса текущего пользователя/демо.
+// В настоящей версии эти данные должны храниться на сервере.
+let votes = {};
 
-    // Реагируем на изменение размеров окна и на перерисовку интерфейса
-    window.addEventListener('load', () => {
-      fetchLaunchParams();
-      // Даём DOM чуть-чуть "устояться" и отправляем высоту
-      setTimeout(resizeWidget, 100);
+let currentScene = "start";
+let selected = null;
+let hasVoted = false;
+
+const chapterElement = document.getElementById("chapter");
+const storyElement = document.getElementById("story");
+const questionElement = document.getElementById("question");
+const optionsElement = document.getElementById("options");
+const voteButton = document.getElementById("voteButton");
+const nextButton = document.getElementById("nextButton");
+const resultElement = document.getElementById("result");
+const statsElement = document.getElementById("stats");
+
+
+function loadScene(sceneName) {
+
+    const scene = chapters[sceneName];
+
+    if (!scene) return;
+
+    currentScene = sceneName;
+    selected = null;
+    hasVoted = false;
+
+    chapterElement.textContent = scene.chapter;
+    storyElement.textContent = scene.story;
+    questionElement.textContent = scene.question;
+
+    optionsElement.innerHTML = "";
+
+    scene.options.forEach((option, index) => {
+
+        const button = document.createElement("button");
+
+        button.className = "option";
+        button.type = "button";
+
+        button.innerHTML = `
+            <div class="option-title">${option.title}</div>
+            <div class="option-text">${option.text}</div>
+
+            <div class="votes">
+                <div class="vote-info">
+                    <span class="vote-count">0 голосов</span>
+                    <span class="vote-percent">0%</span>
+                </div>
+
+                <div class="bar">
+                    <div class="bar-fill"></div>
+                </div>
+            </div>
+        `;
+
+        button.addEventListener("click", () => {
+
+            if (hasVoted) return;
+
+            selected = index;
+
+            document.querySelectorAll(".option")
+                .forEach(el => el.classList.remove("selected"));
+
+            button.classList.add("selected");
+
+            voteButton.disabled = false;
+        });
+
+        optionsElement.appendChild(button);
     });
-    window.addEventListener('resize', resizeWidget);
 
-    // Наблюдаем за изменениями DOM, чтобы вовремя обновить высоту
-    if (typeof MutationObserver !== 'undefined') {
-      const observer = new MutationObserver(() => {
-        // Дебаунс: не чаще, чем раз в 150 мс
-        clearTimeout(window.__resizeTimer);
-        window.__resizeTimer = setTimeout(resizeWidget, 150);
-      });
-      observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    voteButton.style.display = "block";
+    voteButton.disabled = true;
+
+    resultElement.style.display = "none";
+    nextButton.style.display = "none";
+
+    updateVotes();
+}
+
+
+function updateVotes() {
+
+    const sceneVotes = votes[currentScene] || [];
+
+    const scene = chapters[currentScene];
+
+    const total = sceneVotes.reduce(
+        (sum, value) => sum + value,
+        0
+    );
+
+    document.querySelectorAll(".option").forEach((element, index) => {
+
+        const count = sceneVotes[index] || 0;
+
+        const percent = total > 0
+            ? Math.round(count / total * 100)
+            : 0;
+
+        element.querySelector(".vote-count")
+            .textContent = `${count} голосов`;
+
+        element.querySelector(".vote-percent")
+            .textContent = `${percent}%`;
+
+        element.querySelector(".bar-fill")
+            .style.width = `${percent}%`;
+    });
+
+    statsElement.textContent =
+        `Всего голосов: ${total}`;
+}
+
+
+voteButton.addEventListener("click", () => {
+
+    if (selected === null || hasVoted) return;
+
+    if (!votes[currentScene]) {
+        votes[currentScene] =
+            new Array(chapters[currentScene].options.length).fill(0);
     }
 
-    // ================== ДАННЫЕ КВЕСТА ==================
-    const questData = {
-      start: {
-        text: '🌲 Вы очнулись в тёмном лесу. Рядом журчит ручей, а вдалеке виднеется свет. Куда пойдёте?',
-        options: [
-          { id: 'river', label: 'Пойти вдоль ручья', next: 'river' },
-          { id: 'light', label: 'Направиться к свету', next: 'light' }
-        ]
-      },
-      river: {
-        text: '💧 Ручей привёл вас к старому мосту. Под мостом что-то блестит. Ваши действия?',
-        options: [
-          { id: 'bridge', label: 'Заглянуть под мост', next: 'treasure' },
-          { id: 'cross', label: 'Перейти мост и идти дальше', next: 'village' }
-        ]
-      },
-      light: {
-        text: '🔥 Свет оказался костром у хижины. Из хижины слышны голоса. Что будете делать?',
-        options: [
-          { id: 'knock', label: 'Постучать в дверь', next: 'village' },
-          { id: 'hide', label: 'Спрятаться и наблюдать', next: 'treasure' }
-        ]
-      },
-      treasure: {
-        text: '💰 Вы нашли старый сундук с картой! Теперь у вас есть ключ к разгадке. Квест завершён — вы победили!',
-        options: [
-          { id: 'restart', label: 'Пройти квест заново', next: 'start' }
-        ]
-      },
-      village: {
-        text: '🏘️ Вы вышли к деревне. Местные жители рассказали вам о древней легенде. Квест завершён — вы узнали тайну леса!',
-        options: [
-          { id: 'restart', label: 'Пройти квест заново', next: 'start' }
-        ]
-      }
+    votes[currentScene][selected]++;
+
+    hasVoted = true;
+
+    voteButton.style.display = "none";
+
+    updateVotes();
+
+    const sceneVotes = votes[currentScene];
+
+    let winner = 0;
+
+    for (let i = 1; i < sceneVotes.length; i++) {
+
+        if (sceneVotes[i] > sceneVotes[winner]) {
+            winner = i;
+        }
+
+    }
+
+    const winningOption =
+        chapters[currentScene].options[winner];
+
+    resultElement.style.display = "block";
+
+    resultElement.innerHTML = `
+        🗳️ <strong>Голосование завершено.</strong><br><br>
+
+        Сейчас лидирует:<br>
+        <strong>${winningOption.title}</strong><br>
+        ${winningOption.text}
+    `;
+
+    nextButton.style.display = "block";
+
+    nextButton.onclick = () => {
+
+        loadScene(winningOption.next);
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
     };
 
-    const VOTE_DURATION = 30; // длительность голосования в секундах
+});
 
-    // ================== СОСТОЯНИЕ ==================
-    let state = loadState();
 
-    function loadState() {
-      try {
-        const saved = localStorage.getItem('vk_quest_state');
-        if (saved) return JSON.parse(saved);
-      } catch (e) {
-        console.warn('Ошибка загрузки состояния:', e);
-      }
-      return {
-        currentNode: 'start',
-        votes: {},
-        userVote: null,
-        voteStartedAt: null,
-        isVotingActive: false,
-        resultProcessed: false
-      };
-    }
+loadScene("start");
 
-    function saveState() {
-      try {
-        localStorage.setItem('vk_quest_state', JSON.stringify(state));
-      } catch (e) {
-        console.warn('Ошибка сохранения состояния:', e);
-      }
-    }
+</script>
 
-    // ================== ЛОГИКА ГОЛОСОВАНИЯ ==================
-    function startVoting() {
-      const node = questData[state.currentNode];
-      if (!node || !node.options) return;
-
-      node.options.forEach(opt => {
-        if (!(opt.id in state.votes)) state.votes[opt.id] = 0;
-      });
-
-      state.voteStartedAt = Date.now();
-      state.isVotingActive = true;
-      state.resultProcessed = false;
-      saveState();
-
-      render();
-      startTimer();
-    }
-
-    let timerInterval = null;
-
-    function startTimer() {
-      if (timerInterval) clearInterval(timerInterval);
-
-      const timerBlock = document.getElementById('timerBlock');
-      const timerValue = document.getElementById('timerValue');
-      timerBlock.classList.remove('hidden');
-
-      function updateTimer() {
-        const elapsed = (Date.now() - state.voteStartedAt) / 1000;
-        const remaining = Math.max(0, Math.ceil(VOTE_DURATION - elapsed));
-        timerValue.textContent = remaining;
-
-        if (remaining <= 0) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-          finishVoting();
-        }
-      }
-
-      updateTimer();
-      timerInterval = setInterval(updateTimer, 200);
-    }
-
-    function finishVoting() {
-      state.isVotingActive = false;
-      state.resultProcessed = true;
-
-      const node = questData[state.currentNode];
-      if (!node || !node.options) return;
-
-      // Победитель — максимум голосов; при равенстве первый по порядку
-      let winner = node.options[0];
-      let maxVotes = -1;
-      node.options.forEach(opt => {
-        const count = state.votes[opt.id] || 0;
-        if (count > maxVotes) {
-          maxVotes = count;
-          winner = opt;
-        }
-      });
-
-      if (winner.next) {
-        state.currentNode = winner.next;
-        state.votes = {};
-        state.userVote = null;
-        state.voteStartedAt = null;
-        state.resultProcessed = false;
-        saveState();
-
-        const nextNode = questData[state.currentNode];
-        if (nextNode && nextNode.options && nextNode.options.length > 0) {
-          setTimeout(() => startVoting(), 800);
-        } else {
-          render();
-        }
-      } else {
-        render();
-      }
-    }
-
-    function vote(optionId) {
-      if (!state.isVotingActive || state.userVote) return;
-      state.userVote = optionId;
-      state.votes[optionId] = (state.votes[optionId] || 0) + 1;
-      saveState();
-      render();
-    }
-
-    // ================== РЕНДЕРИНГ ==================
-    function render() {
-      const node = questData[state.currentNode];
-      if (!node) return;
-
-      const questText = document.getElementById('questText');
-      const optionsBlock = document.getElementById('optionsBlock');
-      const statusBlock = document.getElementById('statusBlock');
-      const timerBlock = document.getElementById('timerBlock');
-
-      questText.textContent = node.text;
-      optionsBlock.innerHTML = '';
-
-      // Конечный узел — показываем перезапуск
-      if (!node.options || node.options.length === 0) {
-        timerBlock.classList.add('hidden');
-        statusBlock.classList.remove('hidden');
-        statusBlock.textContent = 'Квест завершён. Спасибо за участие!';
-        const restartBtn = document.createElement('button');
-        restartBtn.className = 'option-btn';
-        restartBtn.textContent = 'Пройти заново';
-        restartBtn.onclick = () => {
-          state = {
-            currentNode: 'start',
-            votes: {},
-            userVote: null,
-            voteStartedAt: null,
-            isVotingActive: false,
-            resultProcessed: false
-          };
-          saveState();
-          startVoting();
-        };
-        optionsBlock.appendChild(restartBtn);
-        resizeWidget();
-        return;
-      }
-
-      // Отрисовка вариантов
-      node.options.forEach(opt => {
-        const btn = document.createElement('button');
-        btn.className = 'option-btn';
-        if (state.userVote === opt.id) btn.classList.add('voted');
-        btn.disabled = !state.isVotingActive || !!state.userVote;
-
-        const labelSpan = document.createElement('span');
-        labelSpan.textContent = opt.label;
-
-        const countSpan = document.createElement('span');
-        countSpan.className = 'vote-count';
-        countSpan.textContent = state.votes[opt.id] || 0;
-
-        btn.appendChild(labelSpan);
-        btn.appendChild(countSpan);
-        btn.onclick = () => vote(opt.id);
-        optionsBlock.appendChild(btn);
-      });
-
-      // Статус и таймер
-      if (state.isVotingActive) {
-        statusBlock.classList.add('hidden');
-        timerBlock.classList.remove('hidden');
-      } else if (state.userVote && !state.resultProcessed) {
-        statusBlock.classList.remove('hidden');
-        statusBlock.textContent = 'Ваш голос принят. Ожидайте результатов...';
-        timerBlock.classList.remove('hidden');
-      } else if (!state.isVotingActive && state.resultProcessed) {
-        statusBlock.classList.remove('hidden');
-        statusBlock.textContent = 'Голосование завершено. Переход...';
-        timerBlock.classList.add('hidden');
-      } else {
-        statusBlock.classList.add('hidden');
-        timerBlock.classList.add('hidden');
-      }
-
-      // После перерисовки сообщаем ВК новую высоту
-      resizeWidget();
-    }
-
-    // ================== ЗАПУСК ==================
-    if (!state.voteStartedAt && !state.resultProcessed) {
-      startVoting();
-    } else {
-      if (state.isVotingActive && state.voteStartedAt) {
-        render();
-        startTimer();
-      } else {
-        render();
-      }
-    }
-
-    // Сохраняем состояние при закрытии
-    window.addEventListener('beforeunload', saveState);
-  </script>
 </body>
 </html>
